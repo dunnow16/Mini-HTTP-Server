@@ -1,0 +1,51 @@
+Project 4
+
+Doing only server side
+Use web browser as the client
+see 176 pg protocol doc
+-fit it with what using
+must do:
+1) both types are equivalent as state not saved
+2) support GET only: don't ignore others, send back an answer (501 code to tell that it's unimplemented and use matching message of protocol)
+3) date header: 
+http/1.1 200 OK /r/n
+date: ---- \r\n
+4) last-modified: --- \r\n
+fstat(), stat() with C to get, lastModified() with Java
+5) content-type:              
+only supported types
+6) length:
+7)
+http/1.1 200 OK /r/n
+\r\n
+(file contents)
+-don't have to place all of heaqder and contents all at once in a buffer
+-can send all header pieces in a proper order to client separately if easier.
+8) invalid doc:
+include error page for the client: message has a body, 404 pages usually come from the server. Message may be hard coded, in a file, 
+<html>
+...
+</html> 
+9) check if modified or not and send response
+if-modified-since: 
+10) support persistant connections: 
+11) unsupported headers shouldn't cause a fail
+12) print requests received to log file
+13) prevent server from accessing files outside of docroot dir
+http://localhost:8080/../index.html (this shouldn't work)
+
+Invocation: command line arguments
+./server -p8080
+C: getopt, getopt_long (not have to parse manually, include <getopt.h>), doesn't have to be in a certain order with this
+-if running server other than port 80: (must) add hostname:<portnum>/--- to reach it from browser.
+-localhost: alias for 127.0.0.1
+
+Testing:
+see link for POST: should get a 501 response
+persistant connections: load page with wireshark: look at port numbers to see if the same connection. 
+
+Info:
+syn, ack taken care of by tcp packet: we're on app level, so don't have to worry about
+http: wants \r\n to see as newline
+
+

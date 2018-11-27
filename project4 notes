@@ -47,5 +47,7 @@ persistant connections: load page with wireshark: look at port numbers to see if
 Info:
 syn, ack taken care of by tcp packet: we're on app level, so don't have to worry about
 http: wants \r\n to see as newline
+Persistant: don't close socket afterwards unless the case calls for doing so 20s later.
+select( , , , , timeoutTimeSeconds);
 
 

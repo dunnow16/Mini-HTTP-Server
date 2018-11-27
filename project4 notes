@@ -44,10 +44,24 @@ Testing:
 see link for POST: should get a 501 response
 persistant connections: load page with wireshark: look at port numbers to see if the same connection. 
 
-Info:
+General Info:
 syn, ack taken care of by tcp packet: we're on app level, so don't have to worry about
 http: wants \r\n to see as newline
+
 Persistant: don't close socket afterwards unless the case calls for doing so 20s later.
+
+Handling timeout:
 select( , , , , timeoutTimeSeconds);
+socket	1
+received msg time	x
+socket	2
+received msg time	y
+socket	3
+received msg time	z
+When select y:
+timeoutTimeSeconds = 20 - (currentTime - y);
+int n = select( , , , , timeoutTimeSeconds);
+if (n<0)
+	//timeout condition
 
 

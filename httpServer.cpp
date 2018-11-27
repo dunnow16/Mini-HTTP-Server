@@ -32,49 +32,61 @@ using namespace std;
 
 
 int main(int argc, char** argv) {
+    cout << "---------------Mini HTTP Server---------------" << endl;
     // How to launch server:
-    // ./s -p<port number> -docroot<directory to search for files> 
-    //     -logfile<file for log messages>
-    int port;          // any less than 1024 requires root access
-    string directory,  // dir the server looks for requested files 
-           logfile;    // file for log messages to be written
+    // ./s -p <port number> -docroot <directory to search for files> 
+    //     -logfile <file for log messages>
+    // command line: valid argument passing (or combinations of below)
+    // ./s -p 8080 -docroot . -logfile logs
+    // ./s -p8080 -docroot=. -logfile=logs
+    // ./s -p8080 --docroot=. --logfile=logs
+    
+    // Assign default server values if none given later.
+    int port = DEFAULT_SERVER_PORT;  // any less than 1024 requires root access
+    string directory = ".",     // dir the server looks for requested files 
+           logfile = "stdout";  // file for log messages to be written
 
-    // Parse the command line arguments (reads "-" options)
-    int opt, i;
+    // Parse the command line arguments:
+    // https://stackoverflow.com/questions/7489093/getopt-long-proper-way-to-use-it
+    int opt;
     const char* short_opt = "p:d:l:";
     struct option long_opt[] =
     {
-       {"port", required_argument, NULL, 'p'},
-       {"docroot", required_argument, NULL, 'd'},
-       {"logfile", required_argument, NULL, 'l'},
-       {NULL,      0,                 NULL, 0  }
+        // {const char* name, int has_arg, int* flag, int val} (option struct values in order)
+        {"port",    required_argument, NULL, 'p'},  // val is return from getopt()
+        {"docroot", required_argument, NULL, 'd'},
+        {"logfile", required_argument, NULL, 'l'},
+        {NULL,      0,                 NULL, 0}
     };
-
     while((opt = getopt_long_only(argc, argv, short_opt, long_opt, NULL)) != -1) {
         switch (opt) {
             case -1:  // no more arguments
             case 0:   // long options toggles
                 break;
             case 'p':
-                printf("p: you entered \"%s\"\n", optarg);
+                port = atoi(optarg);
+                printf("port: you entered \"%d\"\n", port);
+                if (port < 0 || port > 65535) {
+                    printf("Please enter a valid port number.");
+                    return 1;
+                }
                 break;
             case 'd':  // docroot
-                // call getopt for all docroot chars here before option?
-                // i = opind;
-                // option.append(1, opt);
-                // while ((opt = getopt(arc, argv, ""))) {
+                directory = optarg;
+                // todo error check
 
-                // }
-                // break;
-                printf("d: you entered \"%s\"\n", optarg);
+                printf("docroot: you entered \"%s\"\n", directory.c_str());
                 break;
             case 'l':  // logfile
-                printf("l: you entered \"%s\"\n", optarg);
+                logfile = optarg;
+                // todo error check
+
+                printf("logfile: you entered \"%s\"\n", logfile.c_str());
                 break;
             case '?':
                 printf("?: you entered \"%s\"\n", optarg);
                 break;
-            default: /* '?' */
+            default:
                 fprintf(stderr, 
                     "Usage: %s [-p portnumber] [-docroot directory] [-logfile file]\n",
                     argv[0]);
@@ -101,10 +113,15 @@ int main(int argc, char** argv) {
     // given request.
     bool quit = false;
     while(!quit) {
+        fd_set tmp_set = sockets;
+		//checks to see if we can read from the sockets
+		//int n = select(FD_SETSIZE, &tmp_set, NULL, NULL, NULL);  // todo timeout time for last arg
+        for (int i = 0; i < FD_SETSIZE; i++) {
+            if (i == sockfd) {  // accepting clients?
 
-
-
-
+            }
+        }
+        
         quit = true;
     }
 

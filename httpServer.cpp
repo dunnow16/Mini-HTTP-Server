@@ -97,11 +97,21 @@ int main(int argc, char** argv) {
 
     // Network communication done using stream (tcp) sockets
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+    // // Set timeout for each socket.
+    // struct timeval timeout;
+    // timeout.tv_sec = 3;
+    // timeout.tv_usec = 0;
+
+    // setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout));
+
+    // Bind socket.
     struct sockaddr_in serveraddr, clientaddr;  // todo clientaddr code needed?
     serveraddr.sin_family = AF_INET;
     // need permission to use 80, which we don't have; we'll just always use 8080
     serveraddr.sin_port = htons(port);
     serveraddr.sin_addr.s_addr = INADDR_ANY;
+    
     bind(sockfd, (struct sockaddr*) &serveraddr, sizeof(serveraddr));
     listen(sockfd, 10);
 
@@ -117,13 +127,21 @@ int main(int argc, char** argv) {
     while(!quit) {
         fd_set tmp_set = sockets;
 		//checks to see if we can read from the sockets
-		//int n = select(FD_SETSIZE, &tmp_set, NULL, NULL, NULL);  // todo timeout time for last arg
+		int n = select(FD_SETSIZE, &tmp_set, NULL, NULL, NULL);  // todo timeout time for last arg
         for (i = 0; i < FD_SETSIZE; i++) {
             if (i == sockfd) {  // accepting clients?
                 printf("A client connected\n");
                 int len = sizeof(clientaddr);
                 int clientsocket = 
                     accept(sockfd, (struct sockaddr*)&clientaddr, (socklen_t*) &len);
+
+                // Set timeout for each socket.
+                struct timeval timeout;
+                timeout.tv_sec = 3;
+                timeout.tv_usec = 0;
+
+                setsockopt(clientsocket,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout));
+
                 FD_SET(clientsocket, &sockets);
             }
         }

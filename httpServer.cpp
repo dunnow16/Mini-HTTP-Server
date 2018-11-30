@@ -112,17 +112,22 @@ int main(int argc, char** argv) {
     // Accept client requests from a browser. Send a response fitting a
     // given request.
     bool quit = false;
+    int i;
     while(!quit) {
         fd_set tmp_set = sockets;
 		//checks to see if we can read from the sockets
 		//int n = select(FD_SETSIZE, &tmp_set, NULL, NULL, NULL);  // todo timeout time for last arg
-        for (int i = 0; i < FD_SETSIZE; i++) {
+        for (i = 0; i < FD_SETSIZE; i++) {
             if (i == sockfd) {  // accepting clients?
-
+                printf("A client connected\n");
+                int len = sizeof(clientaddr);
+                int clientsocket = 
+                    accept(sockfd, (struct sockaddr*)&clientaddr, (socklen_t*) &len);
+                FD_SET(clientsocket, &sockets);
             }
         }
             
-        quit = true;
+        //quit = true;
     }
 
     return 0;

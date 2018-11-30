@@ -144,6 +144,15 @@ int main(int argc, char** argv) {
 
                 FD_SET(clientsocket, &sockets);
             }
+        } else {
+            char* line = new char[5000];
+            unsigned int recv_len = recv(i, line, 5000, 0);
+            if(recv_len == 0) {
+                printf("No data passed from client\n");
+                continue;
+            }   
+            
+
         }
             
         //quit = true;

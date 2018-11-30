@@ -18,6 +18,7 @@
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include <getopt.h>  // parsing command options
+#include <sys/time.h>
 
 //c++ stuff
 #include <iostream> 

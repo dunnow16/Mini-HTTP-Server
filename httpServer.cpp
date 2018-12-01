@@ -54,6 +54,7 @@ int main(int argc, char** argv) {
 
     // Parse the command line arguments:
     // https://stackoverflow.com/questions/7489093/getopt-long-proper-way-to-use-it
+    // optarg is a char array
     int opt;
     const char* short_opt = "p:d:l:";
     struct option long_opt[] =
@@ -163,8 +164,8 @@ int main(int argc, char** argv) {
                         accept(sockfd, (struct sockaddr*)&clientaddr, (socklen_t*) &len);
 
                     // Set timeout for each socket.
-                    struct timeval timeout;
-                    timeout.tv_sec = 3;
+                    struct timeval timeout; 
+                    timeout.tv_sec = 3; //TODO 20sec
                     timeout.tv_usec = 0;
 
                     setsockopt(clientsocket,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout));
@@ -174,7 +175,7 @@ int main(int argc, char** argv) {
                 else {
                     char* line = new char[5000];  // TODO will mem leaks cause a crash if runs too long?
                     // unsigned char* line = new unsigned char[5000];
-                    // j is our socket number
+                    // i is our socket number
                     unsigned int recv_len = recv(i, line, 5000, 0);
                     // Existing client, serve them
                     if(recv_len == 0) {
@@ -196,6 +197,9 @@ int main(int argc, char** argv) {
                             // GET request, process it.
                             if (strncmp(to.c_str(), "GET", 3) == 0) {
                                 printf("GET request\n");
+                                // char noget[] = "Status-Line = HTTP/1.1 200 OK\r\n\r\n";
+                                // char noget[] = "HTTP/1.1 404 Not Found\r\n\r\n";
+                                // send(i, noget, strlen(noget), 0);
                                 
                                 string delimiter = " ";
                                 // for (int j = 0; j < 2; j++) {
@@ -234,6 +238,8 @@ int main(int argc, char** argv) {
 
 /**
  * Return a header of the current time and date.
+ * This passes a reference to the fields to place date header into
+ * strftime, which adds a null terminating character to end.
  */
 void createDateHeader(char* datehdr) {
     time_t rawtime;

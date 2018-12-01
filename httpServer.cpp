@@ -171,10 +171,14 @@ int main(int argc, char** argv) {
                             // GET request, process it.
                             if (strncmp(to.c_str(), "GET", 3) == 0) {
                                 printf("GET request\n");
+                                char noget[] = "Status-Line = HTTP/1.1 200 OK\r\n\r\n";
+                                //char noget[] = "HTTP/1.1 404 Not Found\r\n\r\n";
+                                send(i, noget, strlen(noget), 0);
                             }
                             // Not a GET request!!!!
                             else if (lineNumber == 1) {
                                 printf("not a GET request\n");
+
                             }
 
                         }

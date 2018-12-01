@@ -32,6 +32,7 @@
 
 using namespace std;
 
+void createDateHeader(char* datehdr);
 
 int main(int argc, char** argv) {
     cout << "---------------Mini HTTP Server---------------" << endl;
@@ -121,6 +122,10 @@ int main(int argc, char** argv) {
     FD_ZERO(&sockets);
     FD_SET(sockfd, &sockets);
 
+    char* datehdr = new char[80];
+    createDateHeader(datehdr);
+    printf("%s\n", datehdr);
+
     // Accept client requests from a browser. Send a response fitting a
     // given request.
     bool quit = false;
@@ -156,7 +161,50 @@ int main(int argc, char** argv) {
                         printf("Received zero bytes. Ignoring message.\n");  // prints repeatedly for some reason at times
                         continue;
                     }
-                    //printf("got:\n%s\n", line);
+                    // printf("got:\n%s\n", line);
+
+                    std::stringstream ss(line);
+                    std::string to;
+
+                    int lineNumber = 0;
+                    if (line != NULL)
+                    {
+                        while(std::getline(ss,to,'\n')){
+                            cout << to <<endl;
+
+                            lineNumber++;
+                            
+                            // GET request, process it.
+                            if (strncmp(to.c_str(), "GET", 3) == 0) {
+                                printf("GET request\n");
+                                
+                                string delimiter = " ";
+                                // for (int j = 0; j < 2; j++) {
+                                    // string token = to.substr(0, to.find(delimiter));
+                                    to.erase(0, to.find(delimiter) + delimiter.length());
+                                    string token = to.substr(0, to.find(delimiter));
+                                    cout << "address: " << token << "\n";
+
+                                    // Don't let the client go outside the base directory!        
+                                    if (strncmp(token.c_str(), "/..", 3) == 0) {
+                                        cout << "Client tried to escape the base directory\n";
+                                        continue;
+                                    }
+                                    
+                                // }
+                            }
+                            // Not a GET request!!!!
+                            else if (lineNumber == 1) {
+                                printf("not a GET request\n");
+                                // char* m
+                                // send(i, ) HTTP/1.1 404 Not Found
+                            }
+
+                        }
+
+                    }
+                    
+                    delete line;
                 }
             }
         }
@@ -166,6 +214,12 @@ int main(int argc, char** argv) {
 }
 
 void createDateHeader(char* datehdr) {
-    string temp = "Date: ";
+    time_t rawtime;
+    struct tm* info;
+    char buffer[80];
 
+    time(&rawtime);
+    info = gmtime(&rawtime);
+    strftime(buffer, 80, "Date: %a, %d %b %Y %X GMT", info);
+    memcpy(datehdr, buffer, strlen(buffer)); 
 }

@@ -19,6 +19,7 @@
 #include <sys/select.h>
 #include <getopt.h>  // parsing command options
 #include <sys/time.h>
+#include <sys/stat.h>
 #include <time.h>
 
 //c++ stuff
@@ -34,6 +35,9 @@ using namespace std;
 
 //Function Headers
 void createDateHeader(char* datehdr);
+void createLastModHeader(char* lasthdr, char* fileName);
+void createContentTypeHeader(char* cthdr, char* mt);
+
 char* createStatus(int code);
 char* httpHeader (char* fileName, int code, char* pstatus);
 
@@ -51,6 +55,7 @@ int main(int argc, char** argv) {
     int port = DEFAULT_SERVER_PORT;  // any less than 1024 requires root access
     string directory = ".",     // dir the server looks for requested files 
            logfile = "stdout";  // file for log messages to be written
+    bool isLogFile = false;
 
     // Parse the command line arguments:
     // https://stackoverflow.com/questions/7489093/getopt-long-proper-way-to-use-it
@@ -86,6 +91,7 @@ int main(int argc, char** argv) {
                 break;
             case 'l':  // logfile
                 logfile = optarg;
+                isLogFile = true;
                 // todo error check
 
                 printf("logfile: you entered \"%s\"\n", logfile.c_str());
@@ -126,9 +132,28 @@ int main(int argc, char** argv) {
     FD_ZERO(&sockets);
     FD_SET(sockfd, &sockets);
 
+    // test date header
     char* datehdr = new char[80];
     createDateHeader(datehdr);
-    printf("%s\n", datehdr);
+    // printf("%s\n", datehdr);
+
+    // Create last modified header (doesn't change? run again before sending if it does)
+    char* lasthdr = new char[80];
+    char* temp = (char*)logfile.c_str();
+    createLastModHeader(lasthdr, temp); 
+    char tmp2[] = "pdf"; 
+    char* cthdr = new char[80];
+    createContentTypeHeader(cthdr, tmp2);
+
+    // Open file for writing and return pointer to file object.
+    // test file / stdout writing
+    FILE* pFile;
+    if (isLogFile) {
+        pFile = fopen(logfile.c_str(), "w");
+        fprintf(pFile, lasthdr);
+        //fclose(pFile);  // must close for file to update? (tested this)
+    }
+    //printf(lasthdr);
 
     // Accept client requests from a browser. Send a response fitting a
     // given request.
@@ -171,9 +196,8 @@ int main(int argc, char** argv) {
                     std::string to;
 
                     int lineNumber = 0;
-                    if (line != NULL)
-                    {
-                        while(std::getline(ss,to,'\n')){
+                    if (line != NULL) {
+                        while(std::getline(ss,to,'\n')) {
                             cout << to <<endl;
 
                             lineNumber++;
@@ -213,6 +237,7 @@ int main(int argc, char** argv) {
                                 printf("not a GET request\n");
                                 // char* m
                                 // send(i, ) HTTP/1.1 404 Not Found
+                                //"HTTP/1.1 501 Not Implemented\r\nConnection: close\r\n\r\n"
                             }
 
                         }
@@ -225,11 +250,15 @@ int main(int argc, char** argv) {
         }
     }
 
+    fclose(pFile);  // must close for file to update? (tested this)
     return 0;
 }
 
-//pass a reference to the fields to place date header into
-//strftime adds a null terminating character to end 
+/**
+ * Return a header of the current time and date.
+ * This passes a reference to the fields to place date header into
+ * strftime, which adds a null terminating character to end.
+ */
 void createDateHeader(char* datehdr) {
     time_t rawtime;
     struct tm* info;
@@ -295,3 +324,44 @@ char* httpHeader (char* fileName, int code, char* pstatus) {
 
     return content;
 }
+
+/**
+ * Return a header of the last time a file was modified.
+ */
+void createLastModHeader(char* lasthdr, char* fileName) {
+
+    time_t rawtime;
+    struct tm* info;
+    char buffer[80];
+    // path code here: (don't need unless use files outside of current directory)
+    // string path = "/tmp/symlink/";
+    // path.append(fileName);
+    // char* link = path.c_str();
+    // printf("link path: %s\n", link);
+    // char actualpath[200];
+    // char* ptr;
+    // ptr = realpath(path, actualpath);
+    // printf("actual path: %s\n", actualpath);
+
+    struct stat s;
+    int status;
+    status = stat(fileName, &s);
+    rawtime = s.st_mtime;  // time of last data modification
+    //time(&rawtime);  // current time 
+
+    info = gmtime(&rawtime);  // what the time was in GMT
+    // Create the header in proper format:
+    strftime(buffer, 80, "Last-Modified: %a, %d %b %Y %X GMT\r\n", info);
+    memcpy(lasthdr, buffer, strlen(buffer)); 
+    //printf("%s", lasthdr);
+}
+
+/**
+ * Return a content type header.
+ * todo wa to find content type without hard coding? 
+ */
+void createContentTypeHeader(char* cthdr, char* mt) {
+    sprintf(cthdr, "Content-Type: %s\r\n", mt);
+    //printf(cthdr);
+}
+

@@ -181,6 +181,7 @@ int main(int argc, char** argv) {
                                     // Don't let the client go outside the base directory!        
                                     if (strncmp(token.c_str(), "/..", 3) == 0) {
                                         cout << "Client tried to escape the base directory\n";
+                                        continue;
                                     }
                                     
                                 // }
@@ -188,7 +189,8 @@ int main(int argc, char** argv) {
                             // Not a GET request!!!!
                             else if (lineNumber == 1) {
                                 printf("not a GET request\n");
-                                
+                                // char* m
+                                // send(i, ) HTTP/1.1 404 Not Found
                             }
 
                         }

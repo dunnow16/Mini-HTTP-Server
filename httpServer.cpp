@@ -48,6 +48,7 @@ int main(int argc, char** argv) {
 
     // Parse the command line arguments:
     // https://stackoverflow.com/questions/7489093/getopt-long-proper-way-to-use-it
+    // optarg is a char array
     int opt;
     const char* short_opt = "p:d:l:";
     struct option long_opt[] =
@@ -136,8 +137,8 @@ int main(int argc, char** argv) {
                         accept(sockfd, (struct sockaddr*)&clientaddr, (socklen_t*) &len);
 
                     // Set timeout for each socket.
-                    struct timeval timeout;
-                    timeout.tv_sec = 3;
+                    struct timeval timeout; 
+                    timeout.tv_sec = 3; //TODO 20sec
                     timeout.tv_usec = 0;
 
                     setsockopt(clientsocket,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout));

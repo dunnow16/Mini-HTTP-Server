@@ -35,6 +35,8 @@ using namespace std;
 
 void createDateHeader(char* datehdr);
 void createLastModHeader(char* lasthdr, char* fileName);
+void createContentTypeHeader(char* cthdr, char* mt);
+
 
 int main(int argc, char** argv) {
     cout << "---------------Mini HTTP Server---------------" << endl;
@@ -128,14 +130,17 @@ int main(int argc, char** argv) {
     FD_SET(sockfd, &sockets);
     
     // test date header
-    // char* datehdr = new char[80];
-    // createDateHeader(datehdr);
+    char* datehdr = new char[80];
+    createDateHeader(datehdr);
     // printf("%s\n", datehdr);
 
     // Create last modified header (doesn't change? run again before sending if it does)
     char* lasthdr = new char[80];
     char* temp = (char*)logfile.c_str();
     createLastModHeader(lasthdr, temp); 
+    char tmp2[] = "pdf"; 
+    char* cthdr = new char[80];
+    createContentTypeHeader(cthdr, tmp2);
 
     // Open file for writing and return pointer to file object.
     // test file / stdout writing
@@ -280,5 +285,14 @@ void createLastModHeader(char* lasthdr, char* fileName) {
     // Create the header in proper format:
     strftime(buffer, 80, "Last-Modified: %a, %d %b %Y %X GMT\r\n", info);
     memcpy(lasthdr, buffer, strlen(buffer)); 
-    printf("%s", lasthdr);
+    //printf("%s", lasthdr);
+}
+
+/**
+ * Return a content type header.
+ * todo wa to find content type without hard coding? 
+ */
+void createContentTypeHeader(char* cthdr, char* mt) {
+    sprintf(cthdr, "Content-Type: %s\r\n", mt);
+    //printf(cthdr);
 }

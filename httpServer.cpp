@@ -188,6 +188,7 @@ int main(int argc, char** argv) {
                             // Not a GET request!!!!
                             else if (lineNumber == 1) {
                                 printf("not a GET request\n");
+                                
                             }
 
                         }

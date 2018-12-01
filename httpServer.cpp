@@ -144,6 +144,7 @@ int main(int argc, char** argv) {
 
                 FD_SET(clientsocket, &sockets);
             }
+<<<<<<< HEAD
         } else {
             char* line = new char[5000];
             unsigned int recv_len = recv(i, line, 5000, 0);
@@ -152,6 +153,21 @@ int main(int argc, char** argv) {
                 continue;
             }   
             
+=======
+            // Existing client, serve them
+            else {
+                char* line = new char[5000];  // TODO will mem leaks cause a crash if runs too long?
+                // unsigned char* line = new unsigned char[5000];
+                // j is our socket number
+                unsigned int recv_len = recv(i, line, 5000, 0);
+                if(recv_len == 0) {
+                    printf("Received zero bytes. Ignoring message.\n");  // prints repeatedly for some reason at times
+                    continue;
+                }
+                printf("got:\n%s\n", line);
+
+            }
+>>>>>>> 6cf30ff2adaed9942ff183a416a725c27625e667
 
         }
             

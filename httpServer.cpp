@@ -32,7 +32,10 @@
 
 using namespace std;
 
+//Function Headers
 void createDateHeader(char* datehdr);
+char* createStatus(int code);
+char* httpHeader (char* fileName, int code, char* pstatus);
 
 int main(int argc, char** argv) {
     cout << "---------------Mini HTTP Server---------------" << endl;
@@ -145,7 +148,7 @@ int main(int argc, char** argv) {
 
                     // Set timeout for each socket.
                     struct timeval timeout; 
-                    timeout.tv_sec = 3; //TODO 20sec
+                    timeout.tv_sec = 20; //TODO 20sec
                     timeout.tv_usec = 0;
 
                     setsockopt(clientsocket,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout));
@@ -158,10 +161,10 @@ int main(int argc, char** argv) {
                     // i is our socket number
                     unsigned int recv_len = recv(i, line, 5000, 0);
                     // Existing client, serve them
-                    if(recv_len == 0) {
-                        printf("Received zero bytes. Ignoring message.\n");  // prints repeatedly for some reason at times
-                        continue;
-                    }
+                    // if(recv_len == 0) { //commented out because it was causing issues and seemed unnessesary
+                    //     printf("Received zero bytes. Ignoring message.\n");  // prints repeatedly for some reason at times
+                    //     continue;
+                    // }
                     // printf("got:\n%s\n", line);
 
                     std::stringstream ss(line);
@@ -181,7 +184,15 @@ int main(int argc, char** argv) {
                                 // char noget[] = "Status-Line = HTTP/1.1 200 OK\r\n\r\n";
                                 // char noget[] = "HTTP/1.1 404 Not Found\r\n\r\n";
                                 // send(i, noget, strlen(noget), 0);
-                                
+
+                                // char temp[] = "index.html";
+                                // char temp2[] = "OK";
+                                // char* response = httpHeader(temp, 200, temp2);
+                                char* response = httpHeader("index.html", 200, "OK");
+                                cout << response << endl;
+                                send(i, response, strlen(response), 0);
+
+
                                 string delimiter = " ";
                                 // for (int j = 0; j < 2; j++) {
                                     // string token = to.substr(0, to.find(delimiter));
@@ -228,4 +239,59 @@ void createDateHeader(char* datehdr) {
     info = gmtime(&rawtime);
     strftime(buffer, 80, "Date: %a, %d %b %Y %X GMT\r\n", info);
     memcpy(datehdr, buffer, strlen(buffer)); 
+}
+
+char* createStatus(int code) {
+    char* status = new char[100];
+    strcpy(status, "HTTP/1.1 ");
+
+    if (code == 200) {
+        strcat(status, "200 OK");
+    }
+    else if (code == 404) {
+        strcat(status, "404 Not Found");
+    }
+    else if (code == 304) {
+        strcat(status, "304 Not Modified");
+    }
+    else if (code == 501) {
+        strcat(status, "501 Not Implemented");
+    }
+    else {
+        strcat(status, "400 Bad Request");
+    }
+    strcat(status, "\r\n");
+
+    return status;
+}
+
+/**
+ * http header:
+ * /file?
+ * /status code and text
+ * /date
+ * /last-modified
+ * /content-type
+ * /length
+ * 
+ * 
+ **/
+char* httpHeader (char* fileName, int code, char* pstatus) {
+    char* content = new char[1500];
+    
+    //produce fields to add to header
+    char* statusField = createStatus(code);
+    char* dateField = new char[50];
+    createDateHeader(dateField);
+
+    strcpy(content, statusField);
+    strcat(content, dateField);
+    //strcpy(content, dateField);
+
+    delete statusField;
+    delete dateField;
+
+    cout << content << endl;
+
+    return content;
 }

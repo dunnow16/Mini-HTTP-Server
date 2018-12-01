@@ -129,19 +129,21 @@ int main(int argc, char** argv) {
 		//checks to see if we can read from the sockets
 		int n = select(FD_SETSIZE, &tmp_set, NULL, NULL, NULL);  // todo timeout time for last arg
         for (i = 0; i < FD_SETSIZE; i++) {
-            if (i == sockfd) {  // accepting clients?
-                printf("A client connected\n");
-                int len = sizeof(clientaddr);
-                int clientsocket = 
-                    accept(sockfd, (struct sockaddr*)&clientaddr, (socklen_t*) &len);
+            if(FD_ISSET(i, &tmp_set)) {
+                if (i == sockfd) {  // accepting clients?
+                    printf("A client connected\n");
+                    int len = sizeof(clientaddr);
+                    int clientsocket = 
+                        accept(sockfd, (struct sockaddr*)&clientaddr, (socklen_t*) &len);
 
-                // Set timeout for each socket.
-                struct timeval timeout;
-                timeout.tv_sec = 3;
-                timeout.tv_usec = 0;
+                    // Set timeout for each socket.
+                    struct timeval timeout;
+                    timeout.tv_sec = 3;
+                    timeout.tv_usec = 0;
 
-                setsockopt(clientsocket,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout));
+                    setsockopt(clientsocket,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout));
 
+<<<<<<< HEAD
                 FD_SET(clientsocket, &sockets);
             }
 <<<<<<< HEAD
@@ -163,14 +165,31 @@ int main(int argc, char** argv) {
                 if(recv_len == 0) {
                     printf("Received zero bytes. Ignoring message.\n");  // prints repeatedly for some reason at times
                     continue;
+=======
+                    FD_SET(clientsocket, &sockets);
+>>>>>>> 522c317579f788c52b0ef664ee74d2c1c9031411
                 }
-                printf("got:\n%s\n", line);
+                // Existing client, serve them
+                else {
+                    char* line = new char[5000];  // TODO will mem leaks cause a crash if runs too long?
+                    // unsigned char* line = new unsigned char[5000];
+                    // j is our socket number
+                    unsigned int recv_len = recv(i, line, 5000, 0);
+                    if(recv_len == 0) {
+                        printf("Received zero bytes. Ignoring message.\n");  // prints repeatedly for some reason at times
+                        continue;
+                    }
+                    printf("got:\n%s\n", line);
 
+<<<<<<< HEAD
             }
 >>>>>>> 6cf30ff2adaed9942ff183a416a725c27625e667
+=======
+                }
+>>>>>>> 522c317579f788c52b0ef664ee74d2c1c9031411
 
+            }
         }
-            
         //quit = true;
     }
 

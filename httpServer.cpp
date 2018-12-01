@@ -8,6 +8,8 @@
 //
 // compile: g++ httpServer.cpp -o s
 //
+// run from browser: http://localhost:<portnum>/index.html
+//
 
 #include <sys/socket.h> // How to send/receive information over networks
 #include <netinet/in.h> //includes information specific to internet protocol

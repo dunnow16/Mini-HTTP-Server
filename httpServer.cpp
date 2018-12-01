@@ -18,6 +18,8 @@
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include <getopt.h>  // parsing command options
+#include <sys/time.h>
+#include <time.h>
 
 //c++ stuff
 #include <iostream> 
@@ -30,6 +32,7 @@
 
 using namespace std;
 
+void createDateHeader(char* datehdr);
 
 int main(int argc, char** argv) {
     cout << "---------------Mini HTTP Server---------------" << endl;
@@ -120,6 +123,10 @@ int main(int argc, char** argv) {
     FD_ZERO(&sockets);
     FD_SET(sockfd, &sockets);
 
+    char* datehdr = new char[80];
+    createDateHeader(datehdr);
+    printf("%s\n", datehdr);
+
     // Accept client requests from a browser. Send a response fitting a
     // given request.
     bool quit = false;
@@ -142,15 +149,15 @@ int main(int argc, char** argv) {
                     timeout.tv_usec = 0;
 
                     setsockopt(clientsocket,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout));
-
                     FD_SET(clientsocket, &sockets);
                 }
                 // Existing client, serve them
                 else {
                     char* line = new char[5000];  // TODO will mem leaks cause a crash if runs too long?
                     // unsigned char* line = new unsigned char[5000];
-                    // j is our socket number
+                    // i is our socket number
                     unsigned int recv_len = recv(i, line, 5000, 0);
+                    // Existing client, serve them
                     if(recv_len == 0) {
                         printf("Received zero bytes. Ignoring message.\n");  // prints repeatedly for some reason at times
                         continue;
@@ -171,28 +178,54 @@ int main(int argc, char** argv) {
                             // GET request, process it.
                             if (strncmp(to.c_str(), "GET", 3) == 0) {
                                 printf("GET request\n");
-                                char noget[] = "Status-Line = HTTP/1.1 200 OK\r\n\r\n";
-                                //char noget[] = "HTTP/1.1 404 Not Found\r\n\r\n";
-                                send(i, noget, strlen(noget), 0);
+                                // char noget[] = "Status-Line = HTTP/1.1 200 OK\r\n\r\n";
+                                // char noget[] = "HTTP/1.1 404 Not Found\r\n\r\n";
+                                // send(i, noget, strlen(noget), 0);
+                                
+                                string delimiter = " ";
+                                // for (int j = 0; j < 2; j++) {
+                                    // string token = to.substr(0, to.find(delimiter));
+                                    to.erase(0, to.find(delimiter) + delimiter.length());
+                                    string token = to.substr(0, to.find(delimiter));
+                                    cout << "address: " << token << "\n";
+
+                                    // Don't let the client go outside the base directory!        
+                                    if (strncmp(token.c_str(), "/..", 3) == 0) {
+                                        cout << "Client tried to escape the base directory\n";
+                                        continue;
+                                    }
+                                    
+                                // }
                             }
                             // Not a GET request!!!!
                             else if (lineNumber == 1) {
                                 printf("not a GET request\n");
-
+                                // char* m
+                                // send(i, ) HTTP/1.1 404 Not Found
                             }
 
                         }
 
                     }
                     
-
                     delete line;
                 }
-
             }
         }
-        //quit = true;
     }
 
     return 0;
+}
+
+//pass a reference to the fields to place date header into
+//strftime adds a null terminating character to end 
+void createDateHeader(char* datehdr) {
+    time_t rawtime;
+    struct tm* info;
+    char buffer[80];
+
+    time(&rawtime);
+    info = gmtime(&rawtime);
+    strftime(buffer, 80, "Date: %a, %d %b %Y %X GMT\r\n", info);
+    memcpy(datehdr, buffer, strlen(buffer)); 
 }

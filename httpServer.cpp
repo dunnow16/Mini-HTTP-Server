@@ -26,7 +26,7 @@
 #include <sstream> 
 #include <istream>
 
-#define DEFAULT_SERVER_PORT 8070
+#define DEFAULT_SERVER_PORT 8080
 
 using namespace std;
 
@@ -172,8 +172,8 @@ int main(int argc, char** argv) {
                                 printf("GET request\n");
                             }
                             // Not a GET request!!!!
-                            else {
-
+                            else if (lineNumber == 1) {
+                                printf("not a GET request\n");
                             }
 
                         }

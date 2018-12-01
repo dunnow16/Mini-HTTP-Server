@@ -26,7 +26,7 @@
 #include <sstream> 
 #include <istream>
 
-#define DEFAULT_SERVER_PORT 8080
+#define DEFAULT_SERVER_PORT 8070
 
 using namespace std;
 
@@ -154,8 +154,34 @@ int main(int argc, char** argv) {
                         printf("Received zero bytes. Ignoring message.\n");  // prints repeatedly for some reason at times
                         continue;
                     }
-                    printf("got:\n%s\n", line);
+                    // printf("got:\n%s\n", line);
 
+                    std::stringstream ss(line);
+                    std::string to;
+
+                    int lineNumber = 0;
+                    if (line != NULL)
+                    {
+                        while(std::getline(ss,to,'\n')){
+                            cout << to <<endl;
+
+                            lineNumber++;
+                            
+                            // GET request, process it.
+                            if (strncmp(to.c_str(), "GET", 3) == 0) {
+                                printf("GET request\n");
+                            }
+                            // Not a GET request!!!!
+                            else {
+
+                            }
+
+                        }
+
+                    }
+                    
+
+                    delete line;
                 }
 
             }

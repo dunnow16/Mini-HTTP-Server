@@ -170,6 +170,20 @@ int main(int argc, char** argv) {
                             // GET request, process it.
                             if (strncmp(to.c_str(), "GET", 3) == 0) {
                                 printf("GET request\n");
+                                
+                                string delimiter = " ";
+                                // for (int j = 0; j < 2; j++) {
+                                    // string token = to.substr(0, to.find(delimiter));
+                                    to.erase(0, to.find(delimiter) + delimiter.length());
+                                    string token = to.substr(0, to.find(delimiter));
+                                    cout << "address: " << token << "\n";
+
+                                    // Don't let the client go outside the base directory!        
+                                    if (strncmp(token.c_str(), "/..", 3) == 0) {
+                                        cout << "Client tried to escape the base directory\n";
+                                    }
+                                    
+                                // }
                             }
                             // Not a GET request!!!!
                             else if (lineNumber == 1) {

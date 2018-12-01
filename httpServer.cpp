@@ -19,6 +19,7 @@
 #include <sys/select.h>
 #include <getopt.h>  // parsing command options
 #include <sys/time.h>
+#include <time.h>
 
 //c++ stuff
 #include <iostream> 
@@ -142,32 +143,7 @@ int main(int argc, char** argv) {
                     timeout.tv_usec = 0;
 
                     setsockopt(clientsocket,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout));
-
-<<<<<<< HEAD
-                FD_SET(clientsocket, &sockets);
-            }
-<<<<<<< HEAD
-        } else {
-            char* line = new char[5000];
-            unsigned int recv_len = recv(i, line, 5000, 0);
-            if(recv_len == 0) {
-                printf("No data passed from client\n");
-                continue;
-            }   
-            
-=======
-            // Existing client, serve them
-            else {
-                char* line = new char[5000];  // TODO will mem leaks cause a crash if runs too long?
-                // unsigned char* line = new unsigned char[5000];
-                // j is our socket number
-                unsigned int recv_len = recv(i, line, 5000, 0);
-                if(recv_len == 0) {
-                    printf("Received zero bytes. Ignoring message.\n");  // prints repeatedly for some reason at times
-                    continue;
-=======
                     FD_SET(clientsocket, &sockets);
->>>>>>> 522c317579f788c52b0ef664ee74d2c1c9031411
                 }
                 // Existing client, serve them
                 else {
@@ -175,23 +151,21 @@ int main(int argc, char** argv) {
                     // unsigned char* line = new unsigned char[5000];
                     // j is our socket number
                     unsigned int recv_len = recv(i, line, 5000, 0);
+                    // Existing client, serve them
                     if(recv_len == 0) {
                         printf("Received zero bytes. Ignoring message.\n");  // prints repeatedly for some reason at times
                         continue;
                     }
-                    printf("got:\n%s\n", line);
-
-<<<<<<< HEAD
-            }
->>>>>>> 6cf30ff2adaed9942ff183a416a725c27625e667
-=======
+                    //printf("got:\n%s\n", line);
                 }
->>>>>>> 522c317579f788c52b0ef664ee74d2c1c9031411
-
             }
         }
-        //quit = true;
     }
 
     return 0;
+}
+
+void createDateHeader(char* datehdr) {
+    string temp = "Date: ";
+
 }

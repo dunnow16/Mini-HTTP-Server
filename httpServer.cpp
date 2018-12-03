@@ -237,7 +237,16 @@ int main(int argc, char** argv) {
                             cout << to <<endl;
 
                             lineNumber++;
-                            
+
+                            // Close connection                            
+                            string connection_close = "Connection: close";
+                            if (strncmp(to.c_str(), connection_close.c_str(), connection_close.length()) == 0) {
+                                logInfo(logfile, isLogFile,
+                                    "Connection closed by client\n");
+                                close(i);
+                                FD_CLR(i, &sockets);
+                                continue;
+                            }
                             // GET request, process it.
                             if (strncmp(to.c_str(), "GET", 3) == 0) {
                                 // logInfo(logfile, isLogFile,
@@ -397,10 +406,14 @@ char* httpHeader (char* fileName, int code, int sock) {
     char* contentTypeField = createContentTypeHeader(fileName);
     // Content-Length: <length>
     char* contentLengthField = createContentLength(fileName);
-    
+
+    char* lastModifiedField = new char[100];
+    createLastModHeader(lastModifiedField, fileName);
+
 
     strcpy(content, statusField);
     strcat(content, dateField);
+    strcat(content, lastModifiedField);
     strcat(content, contentLengthField);
     strcat(content, contentTypeField);
     strcat(content, "\r\n");
@@ -435,37 +448,13 @@ char* createContentLength(char* fileName) {
     ssize_t read;
     char* data = new char[5000];
 
-    // struct fileData* fData = new struct fileData;
-
-    //if ((fptr = fopen("C:\\program.txt","r")) == NULL){
-    //    printf("Error! opening file");
-    //    // Program exits if the file pointer returns NULL.
-    //    exit(1);
-    //}
-
     // from https://stackoverflow.com/questions/230062/whats-the-best-way-to-check-if-a-file-exists-in-c-cross-platform
     // line is fileName here
     if( access( fileName, F_OK ) != -1 ) {
-        // file exists
-        // printf("File found.\n");
         fptr = fopen(fileName, "r");
-        //read = getline(&line2, &length, fptr);
-        read = fread(data, 1, 5000, fptr);
-        // printf("Sending, size is %zd\n", read);
-        // send(sock, fileName, read, 0);      
-        // fData->data = data;
-        // fData->length = read; 
-        
 
-
-        //*** +1 added to str causes previous error!
-        //send(clientsocket, line2, strlen(line2)+1, 0);
-        // while ((read = getline(&line2, &length, fptr)) != -1) {
-        //    printf("%s", line2); //for error checking
-        //    //strcat(line3, line2);
-        //    send(clientsocket, line2, strlen(line2), 0);
-        // }
-        //send(clientsocket, line3, strlen(line3)+1, 0);
+        fseek (fptr, 0, SEEK_END);   // non-portable
+        read = ftell (fptr);        // printf("Sending, size is %zd\n", read);
         fclose(fptr);
     } else {
         // file doesn't exist
@@ -550,7 +539,7 @@ void createLastModHeader(char* lasthdr, char* fileName) {
     info = gmtime(&rawtime);  // what the time was in GMT
     // Create the header in proper format:
     strftime(buffer, 80, "Last-Modified: %a, %d %b %Y %X GMT\r\n", info);
-    memcpy(lasthdr, buffer, strlen(buffer)); 
+    memcpy(lasthdr, buffer, strlen(buffer)+1);
     //printf("%s", lasthdr);
 }
 

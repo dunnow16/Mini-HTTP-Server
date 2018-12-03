@@ -236,7 +236,8 @@ int main(int argc, char** argv) {
                                 // char temp[] = "index.html";
                                 // char temp2[] = "OK";
                                 // char* response = httpHeader(temp, 200, temp2);
-                                char* response = httpHeader("index.html", 200, i);
+
+                                // char* response = httpHeader("index.html", 200, i);
                                 //cout << response << endl;
                                 
                                 string delimiter = " ";
@@ -245,6 +246,7 @@ int main(int argc, char** argv) {
                                     to.erase(0, to.find(delimiter) + delimiter.length());
                                     string token = to.substr(0, to.find(delimiter));
                                     cout << "address: " << token << "\n";
+                                    char* response = httpHeader(((char*)token.c_str())+1, 200, i);
 
                                     // Don't let the client go outside the base directory!        
                                     if (strncmp(token.c_str(), "/..", 3) == 0) {

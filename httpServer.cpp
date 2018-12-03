@@ -41,7 +41,8 @@ void createLastModHeader(char* lasthdr, char* fileName);
 void createContentTypeHeader(char* cthdr, char* mt);
 
 char* createStatus(int code);
-char* httpHeader (char* fileName, int code, char* pstatus);
+char* httpHeader (char* fileName, int code, int sock);
+void sendFile(char* fName, int sock);
 
 int main(int argc, char** argv) {
     cout << "---------------Mini HTTP Server---------------" << endl;
@@ -178,7 +179,7 @@ int main(int argc, char** argv) {
                     timeout.tv_sec = 20; //TODO 20sec
                     timeout.tv_usec = 0;
 
-                    setsockopt(clientsocket,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout));
+                    setsockopt(clientsocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
                     FD_SET(clientsocket, &sockets);
                 }
                 // Existing client, serve them
@@ -214,9 +215,9 @@ int main(int argc, char** argv) {
                                 // char temp[] = "index.html";
                                 // char temp2[] = "OK";
                                 // char* response = httpHeader(temp, 200, temp2);
-                                char* response = httpHeader("index.html", 200, "OK");
+                                char* response = httpHeader("index.html", 200, i);
                                 cout << response << endl;
-                                send(i, response, strlen(response), 0);
+                                
 
 
                                 string delimiter = " ";
@@ -229,6 +230,8 @@ int main(int argc, char** argv) {
                                     // Don't let the client go outside the base directory!        
                                     if (strncmp(token.c_str(), "/..", 3) == 0) {
                                         cout << "Client tried to escape the base directory\n";
+                                        // TODO log
+                                        // TODO respond with error 400?
                                         continue;
                                     }
                                     
@@ -307,7 +310,7 @@ char* createStatus(int code) {
  * 
  * 
  **/
-char* httpHeader (char* fileName, int code, char* pstatus) {
+char* httpHeader (char* fileName, int code, int sock) {
     char* content = new char[1500];
     
     //produce fields to add to header
@@ -318,6 +321,12 @@ char* httpHeader (char* fileName, int code, char* pstatus) {
     strcpy(content, statusField);
     strcat(content, dateField);
     //strcpy(content, dateField);
+    strcat(content, "\r\n");
+
+    //send header
+    send(sock, content, strlen(content), 0);
+    //send appropriate data
+    sendFile(fileName, sock);
 
     delete statusField;
     delete dateField;
@@ -360,10 +369,47 @@ void createLastModHeader(char* lasthdr, char* fileName) {
 
 /**
  * Return a content type header.
- * todo wa to find content type without hard coding? 
+ * todo way to find content type without hard coding? 
  */
 void createContentTypeHeader(char* cthdr, char* mt) {
     sprintf(cthdr, "Content-Type: %s\r\n", mt);
     //printf(cthdr);
+}
+
+void sendFile(char* fName, int sock) {
+    FILE *fptr;
+    size_t length = 0; 
+    ssize_t read;
+    char data[5000];
+
+    //if ((fptr = fopen("C:\\program.txt","r")) == NULL){
+    //    printf("Error! opening file");
+    //    // Program exits if the file pointer returns NULL.
+    //    exit(1);
+    //}
+
+    // from https://stackoverflow.com/questions/230062/whats-the-best-way-to-check-if-a-file-exists-in-c-cross-platform
+    // line is fname here
+    if( access( fName, F_OK ) != -1 ) {
+        // file exists
+        printf("File found.\n");
+        fptr = fopen(fName, "r");
+        //read = getline(&line2, &length, fptr);
+        read = fread(data, 1, 5000, fptr);
+        printf("Sending, size is %zd\n", read);
+        send(sock, fName, read, 0);
+
+        //*** +1 added to str causes previous error!
+        //send(clientsocket, line2, strlen(line2)+1, 0);
+        // while ((read = getline(&line2, &length, fptr)) != -1) {
+        //    printf("%s", line2); //for error checking
+        //    //strcat(line3, line2);
+        //    send(clientsocket, line2, strlen(line2), 0);
+        // }
+        //send(clientsocket, line3, strlen(line3)+1, 0);
+    } else {
+        // file doesn't exist
+        printf("The file does not exist!\n");
+    }
 }
 

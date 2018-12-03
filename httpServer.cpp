@@ -38,14 +38,16 @@ using namespace std;
 //Function Headers
 void createDateHeader(char* datehdr);
 void createLastModHeader(char* lasthdr, char* fileName);
-void createContentTypeHeader(char* cthdr, char* mt);
+// void createContentTypeHeader(char* cthdr, char* mt);
+char* createContentTypeHeader(char* fileName);
 
 char* createStatus(int code);
 char* httpHeader (char* fileName, int code, int sock);
-void sendFile(char* fileName, int sock);
+int sendFile(char* fileName, int sock);
 
 char* getFileExtension(char* fileName);
 char* createContentLength(char* fileName);
+
 
 int main(int argc, char** argv) {
     cout << "---------------Mini HTTP Server---------------" << endl;
@@ -144,12 +146,14 @@ int main(int argc, char** argv) {
     // printf("%s\n", datehdr);
 
     // Create last modified header (doesn't change? run again before sending if it does)
+    //TESTING
     char* lasthdr = new char[80];
     char* temp = (char*)logfile.c_str();
     createLastModHeader(lasthdr, temp); 
-    char tmp2[] = "pdf"; 
-    char* cthdr = new char[80];
-    createContentTypeHeader(cthdr, tmp2);
+    //TESTING
+    // char tmp2[] = "pdf"; 
+    // char* cthdr = new char[80];
+    // createContentTypeHeader(cthdr, tmp2);
 
     // Open file for writing and return pointer to file object.
     // test file / stdout writing
@@ -192,11 +196,18 @@ int main(int argc, char** argv) {
                     // i is our socket number
                     unsigned int recv_len = recv(i, line, 5000, 0);
                     // Existing client, serve them
-                    // if(recv_len == 0) { //commented out because it was causing issues and seemed unnessesary
-                    //     printf("Received zero bytes. Ignoring message.\n");  // prints repeatedly for some reason at times
-                    //     continue;
-                    // }
-                    // printf("got:\n%s\n", line);
+                    //if client closes connection we will recieve 0 bytes
+                    if(recv_len == 0) {
+                        //if the client has closed the connection 
+                        //we need to remove the client from the list of sockets
+                        printf("Received zero bytes. Client closed connection.\n");  
+                        close(i);
+						FD_CLR(i, &sockets);
+                        continue;
+                    }
+
+
+                    printf("got:\n%s\n", line);
 
                     std::stringstream ss(line);
                     std::string to;
@@ -219,10 +230,8 @@ int main(int argc, char** argv) {
                                 // char temp2[] = "OK";
                                 // char* response = httpHeader(temp, 200, temp2);
                                 char* response = httpHeader("index.html", 200, i);
-                                cout << response << endl;
+                                //cout << response << endl;
                                 
-
-
                                 string delimiter = " ";
                                 // for (int j = 0; j < 2; j++) {
                                     // string token = to.substr(0, to.find(delimiter));
@@ -304,17 +313,17 @@ char* createStatus(int code) {
 
 /**
  * http header:
- * /file?
- * /status code and text
- * /date
+ * 
+ * x/status code and text
+ * x/date
  * /last-modified
  * /content-type
- * /length
- * 
+ * x/length
+ * x/file data
  * 
  **/
 char* httpHeader (char* fileName, int code, int sock) {
-    char* content = new char[1500];
+    char* content = new char[2500];
     
     // cout << getFileExtension(fileName);
 
@@ -322,15 +331,15 @@ char* httpHeader (char* fileName, int code, int sock) {
     char* statusField = createStatus(code);
     char* dateField = new char[50];
     createDateHeader(dateField);
-
-    char* contentLengthField = createContentLength(fileName);
-
+    char* contentTypeField = createContentTypeHeader(fileName);
     // Content-Length: <length>
+    char* contentLengthField = createContentLength(fileName);
+    
 
     strcpy(content, statusField);
     strcat(content, dateField);
     strcat(content, contentLengthField);
-    //strcpy(content, dateField);
+    strcat(content, contentTypeField);
     strcat(content, "\r\n");
 
     //send header
@@ -360,13 +369,49 @@ char* createContentLength(char* fileName) {
     return contentLength;
 }
 
+/**
+ * returns the appropriate html file type for content header
+ * returns 501 for a file type that is unsupported
+ */
 char* getFileExtension(char* fileName) {
-    char* extension = new char[5];
+    char* extension = new char[15];
     if (strncmp( fileName + strlen(fileName) - 4, "html", 4) == 0) {
-        memcpy(extension, "html\n", 5);
+        strcpy(extension, "text/html");
+    }
+    //TODO
+    else if (strncmp( fileName + strlen(fileName) - 3, "txt", 3) == 0) {
+        memcpy(extension, "text\n", 5);
+    }
+    else if ((strncmp( fileName + strlen(fileName) - 3, "jpg", 3) == 0 ) || 
+        (strncmp( fileName + strlen(fileName) - 4, "jpeg", 4) == 0 )) {
+        memcpy(extension, "jpeg\n", 5);
+    }
+    else if (strncmp( fileName + strlen(fileName) - 3, "pdf", 3) == 0) {
+        memcpy(extension, "application/pdf", 4);
+    }
+    else {
+        memcpy(extension, "501\n", 4);
     }
 
     return extension;
+}
+
+/**
+ * Return a content type header.
+ * todo way to find content type without hard coding? 
+ */
+// void createContentTypeHeader(char* cthdr, char* mt) {
+//     sprintf(cthdr, "Content-Type: %s\r\n", mt);
+//     //printf(cthdr);
+// }
+char* createContentTypeHeader(char* fileName) {
+    char* cthdr = new char[100];
+
+    char* xt = getFileExtension(fileName);
+
+    sprintf(cthdr, "Content-Type: %s\r\n", xt);
+
+    return cthdr;
 }
 
 
@@ -401,16 +446,7 @@ void createLastModHeader(char* lasthdr, char* fileName) {
     //printf("%s", lasthdr);
 }
 
-/**
- * Return a content type header.
- * todo way to find content type without hard coding? 
- */
-void createContentTypeHeader(char* cthdr, char* mt) {
-    sprintf(cthdr, "Content-Type: %s\r\n", mt);
-    //printf(cthdr);
-}
-
-void sendFile(char* fileName, int sock) {
+int sendFile(char* fileName, int sock) {
     FILE *fptr;
     size_t length = 0; 
     ssize_t read;
@@ -441,9 +477,11 @@ void sendFile(char* fileName, int sock) {
         //    send(clientsocket, line2, strlen(line2), 0);
         // }
         //send(clientsocket, line3, strlen(line3)+1, 0);
+        return read;
     } else {
         // file doesn't exist
         printf("The file does not exist!\n");
+        return 0;
     }
 }
 

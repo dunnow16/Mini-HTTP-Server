@@ -36,6 +36,7 @@ using namespace std;
 void createDateHeader(char* datehdr);
 void createLastModHeader(char* lasthdr, char* fileName);
 void createContentTypeHeader(char* cthdr, char* mt);
+bool isFileModified(char* ifModSinceHdr, char* fileName);
 
 
 int main(int argc, char** argv) {
@@ -152,6 +153,10 @@ int main(int argc, char** argv) {
     }
     //printf(lasthdr);
 
+    char tmp3[] = "If-Modified-Since: Mon, 4 6 2018 22:15:12 GMT";
+    char fn[] = "project4 notes";
+    isFileModified(tmp3, fn); 
+
     // Accept client requests from a browser. Send a response fitting a
     // given request.
     bool quit = false;
@@ -254,6 +259,8 @@ void createDateHeader(char* datehdr) {
     time(&rawtime);
     info = gmtime(&rawtime);
     strftime(buffer, 80, "Date: %a, %d %b %Y %X GMT\r\n", info);
+    // add a null terminator?
+    
     memcpy(datehdr, buffer, strlen(buffer)); 
 }
 
@@ -261,7 +268,6 @@ void createDateHeader(char* datehdr) {
  * Return a header of the last time a file was modified.
  */
 void createLastModHeader(char* lasthdr, char* fileName) {
-
     time_t rawtime;
     struct tm* info;
     char buffer[80];
@@ -286,6 +292,50 @@ void createLastModHeader(char* lasthdr, char* fileName) {
     strftime(buffer, 80, "Last-Modified: %a, %d %b %Y %X GMT\r\n", info);
     memcpy(lasthdr, buffer, strlen(buffer)); 
     //printf("%s", lasthdr);
+}
+
+/**
+ * This functin determines if a file has been modified since the time
+ * the client asked.
+ */
+bool isFileModified(char* ifModSinceHdr, char* fileName) {
+    char temp[100];
+    char* token;
+    memcpy(temp, ifModSinceHdr, strlen(ifModSinceHdr));
+
+    // get all values from the changed since string
+    token = strtok(temp, " ,:");
+    printf("%s\n", token);
+    int i = 1;
+    char day[] = strtok(NULL, " ,:");
+    int dayInt = atoi(strtok(NULL, " ,:"));
+    int month = atoi(strtok(NULL, " ,:"));
+    int year = atoi(strtok(NULL, " ,:"));
+    int hour = atoi(strtok(NULL, " ,:"));
+    int minute = atoi(strtok(NULL, " ,:"));
+    int second = atoi(strtok(NULL, " ,:"));
+
+    // get values from file string
+    char dayf[] = ;
+    int dayIntf = atoi(strtok(NULL, " ,:"));
+    int monthf = atoi(strtok(NULL, " ,:"));
+    int yearf = atoi(strtok(NULL, " ,:"));
+    int hourf = atoi(strtok(NULL, " ,:"));
+    int minutef = atoi(strtok(NULL, " ,:"));
+    int secondf = atoi(strtok(NULL, " ,:"));
+
+    // now compare values to find if changed since:
+    
+
+    // while((token=strtok(NULL, " ,:")) != NULL){
+    //     printf("%s\n", token);
+        
+
+
+    //     ++i;
+    // }
+    
+    return true;
 }
 
 /**

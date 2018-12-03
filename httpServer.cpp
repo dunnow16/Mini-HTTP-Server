@@ -428,23 +428,22 @@ char* createContentLength(char* fileName) {
  * returns 501 for a file type that is unsupported
  */
 char* getFileExtension(char* fileName) {
-    char* extension = new char[15];
+    char* extension = new char[25];
     if (strncmp( fileName + strlen(fileName) - 4, "html", 4) == 0) {
         strcpy(extension, "text/html");
     }
-    //TODO
     else if (strncmp( fileName + strlen(fileName) - 3, "txt", 3) == 0) {
-        memcpy(extension, "text\n", 5);
+        strcpy(extension, "text/plain");
     }
     else if ((strncmp( fileName + strlen(fileName) - 3, "jpg", 3) == 0 ) || 
         (strncmp( fileName + strlen(fileName) - 4, "jpeg", 4) == 0 )) {
-        memcpy(extension, "jpeg\n", 5);
+        strcpy(extension, "image/jpeg");
     }
     else if (strncmp( fileName + strlen(fileName) - 3, "pdf", 3) == 0) {
-        memcpy(extension, "application/pdf", 4);
+        strcpy(extension, "application/pdf");
     }
     else {
-        memcpy(extension, "501\n", 4);
+        memcpy(extension, "501", 3);
     }
 
     return extension;

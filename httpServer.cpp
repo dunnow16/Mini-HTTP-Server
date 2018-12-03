@@ -240,8 +240,8 @@ int main(int argc, char** argv) {
                             
                             // GET request, process it.
                             if (strncmp(to.c_str(), "GET", 3) == 0) {
-                                logInfo(logfile, isLogFile,
-                                    "GET request\n");
+                                // logInfo(logfile, isLogFile,
+                                //     "GET request\n");
                                 // printf("GET request\n");
                                 // char noget[] = "Status-Line = HTTP/1.1 200 OK\r\n\r\n";
                                 // char noget[] = "HTTP/1.1 404 Not Found\r\n\r\n";
@@ -270,11 +270,15 @@ int main(int argc, char** argv) {
                                         // char* response = httpHeader(((char*)token.c_str())+1, 200, i);
                                         char* response = httpHeader(fullPath, 200, i);
                                         logInfo(logfile, isLogFile,
-                                            "file sent\n");
+                                            response);
+                                        // logInfo(logfile, isLogFile,
+                                        //     "file sent\n");
                                     } else {
                                         char* response = httpHeader("404NotFound.html", 404, i);
                                         logInfo(logfile, isLogFile,
-                                            "file not found\n");
+                                            response);
+                                        // logInfo(logfile, isLogFile,
+                                        //     "file not found\n");
                                     }
 
                                     // Don't let the client go outside the base directory!        
@@ -282,7 +286,9 @@ int main(int argc, char** argv) {
                                         // cout << "Client tried to escape the base directory\n";
                                         char* response = httpHeader("400BadRequest.html", 400, i);
                                         logInfo(logfile, isLogFile,
-                                            "Client tried to escape the base directory\n");
+                                            response);
+                                        // logInfo(logfile, isLogFile,
+                                        //     "Client tried to escape the base directory\n");
                                         continue;
                                     }
                                     
@@ -292,8 +298,10 @@ int main(int argc, char** argv) {
                             else if (lineNumber == 1) {
                                 // printf("not a GET request\n");
                                 char* response = httpHeader("501NotImplemented.html", 501, i);
+                                // logInfo(logfile, isLogFile,
+                                //     "Client attempted a non-GET request\n");
                                 logInfo(logfile, isLogFile,
-                                    "Client attempted a non-GET request\n");
+                                    response);
 
                                 // char* m
                                 // send(i, ) HTTP/1.1 404 Not Found

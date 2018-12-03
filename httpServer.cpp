@@ -30,6 +30,7 @@
 #include <string>
 #include <sstream> 
 #include <istream>
+#include <fstream>
 
 #define DEFAULT_SERVER_PORT 8080
 
@@ -56,6 +57,7 @@ char* createContentLength(char* fileName);
 
 bool fileExists(char* fileName);
 
+bool logInfo(string fileName, bool logToFile, string message);
 
 int main(int argc, char** argv) {
     cout << "---------------Mini HTTP Server---------------" << endl;
@@ -167,9 +169,9 @@ int main(int argc, char** argv) {
     // test file / stdout writing
     FILE* pFile;
     if (isLogFile) {
-        pFile = fopen(logfile.c_str(), "w");
-        fprintf(pFile, lasthdr);
-        //fclose(pFile);  // must close for file to update? (tested this)
+        // pFile = fopen(logfile.c_str(), "w");
+        // fprintf(pFile, lasthdr);
+        // fclose(pFile);  // must close for file to update? (tested this)
     }
     //printf(lasthdr);
 
@@ -184,7 +186,10 @@ int main(int argc, char** argv) {
         for (i = 0; i < FD_SETSIZE; i++) {
             if(FD_ISSET(i, &tmp_set)) {
                 if (i == sockfd) {  // accepting clients?
-                    printf("A client connected\n");
+
+                    logInfo(logfile, isLogFile,
+                        "A client connected\n");
+                    
                     int len = sizeof(clientaddr);
                     int clientsocket = 
                         accept(sockfd, (struct sockaddr*)&clientaddr, (socklen_t*) &len);
@@ -208,14 +213,20 @@ int main(int argc, char** argv) {
                     if(recv_len == 0) {
                         //if the client has closed the connection 
                         //we need to remove the client from the list of sockets
-                        printf("Received zero bytes. Client closed connection.\n");  
+
+                        logInfo(logfile, isLogFile,
+                         "Received zero bytes. Client closed connection.\n");
+
                         close(i);
 						FD_CLR(i, &sockets);
                         continue;
                     }
 
 
-                    printf("got:\n%s\n", line);
+                    // printf("got:\n%s\n", line);
+
+                    logInfo(logfile, isLogFile,
+                        "got:\n" + string(line) + "\n");
 
                     std::stringstream ss(line);
                     std::string to;
@@ -229,7 +240,9 @@ int main(int argc, char** argv) {
                             
                             // GET request, process it.
                             if (strncmp(to.c_str(), "GET", 3) == 0) {
-                                printf("GET request\n");
+                                // logInfo(logfile, isLogFile,
+                                //     "GET request\n");
+                                // printf("GET request\n");
                                 // char noget[] = "Status-Line = HTTP/1.1 200 OK\r\n\r\n";
                                 // char noget[] = "HTTP/1.1 404 Not Found\r\n\r\n";
                                 // send(i, noget, strlen(noget), 0);
@@ -246,7 +259,7 @@ int main(int argc, char** argv) {
                                     // string token = to.substr(0, to.find(delimiter));
                                     to.erase(0, to.find(delimiter) + delimiter.length());
                                     string token = to.substr(0, to.find(delimiter));
-                                    cout << "address: " << token << "\n";
+                                    // cout << "address: " << token << "\n";
 
                                     char* fullPath = new char[100];
                                     strcpy(fullPath, directory.c_str());
@@ -256,15 +269,26 @@ int main(int argc, char** argv) {
                                     if (fileExists(fullPath)) {
                                         // char* response = httpHeader(((char*)token.c_str())+1, 200, i);
                                         char* response = httpHeader(fullPath, 200, i);
+                                        logInfo(logfile, isLogFile,
+                                            response);
+                                        // logInfo(logfile, isLogFile,
+                                        //     "file sent\n");
                                     } else {
                                         char* response = httpHeader("404NotFound.html", 404, i);
+                                        logInfo(logfile, isLogFile,
+                                            response);
+                                        // logInfo(logfile, isLogFile,
+                                        //     "file not found\n");
                                     }
 
                                     // Don't let the client go outside the base directory!        
                                     if (strncmp(token.c_str(), "/..", 3) == 0) {
-                                        cout << "Client tried to escape the base directory\n";
-                                        // TODO log
-                                        // TODO respond with error 400?
+                                        // cout << "Client tried to escape the base directory\n";
+                                        char* response = httpHeader("400BadRequest.html", 400, i);
+                                        logInfo(logfile, isLogFile,
+                                            response);
+                                        // logInfo(logfile, isLogFile,
+                                        //     "Client tried to escape the base directory\n");
                                         continue;
                                     }
                                     
@@ -272,8 +296,12 @@ int main(int argc, char** argv) {
                             }
                             // Not a GET request!!!!
                             else if (lineNumber == 1) {
-                                printf("not a GET request\n");
+                                // printf("not a GET request\n");
                                 char* response = httpHeader("501NotImplemented.html", 501, i);
+                                // logInfo(logfile, isLogFile,
+                                //     "Client attempted a non-GET request\n");
+                                logInfo(logfile, isLogFile,
+                                    response);
 
                                 // char* m
                                 // send(i, ) HTTP/1.1 404 Not Found
@@ -294,6 +322,17 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+bool logInfo(string fileName, bool logToFile, string message) {
+    if (logToFile) {
+        std::ofstream outfile;
+
+        outfile.open(fileName.c_str(), std::ios_base::app);
+        outfile << message;
+    }
+    cout << message;
+    return true;
+}
+
 /**
  * Return a header of the current time and date.
  * This passes a reference to the fields to place date header into
@@ -308,7 +347,7 @@ void createDateHeader(char* datehdr) {
     info = gmtime(&rawtime);
     strftime(buffer, 80, "Date: %a, %d %b %Y %X GMT\r\n", info);
     // strftime(buffer, 80, "Date: %a, %d %b %Y %X GMT\r\n", info);
-    memcpy(datehdr, buffer, strlen(buffer)); 
+    memcpy(datehdr, buffer, strlen(buffer)+1);
 }
 
 char* createStatus(int code) {
@@ -361,7 +400,7 @@ char* httpHeader (char* fileName, int code, int sock) {
     
 
     strcpy(content, statusField);
-    // strcpy(content, dateField);
+    strcat(content, dateField);
     strcat(content, contentLengthField);
     strcat(content, contentTypeField);
     strcat(content, "\r\n");

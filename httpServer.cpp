@@ -35,6 +35,11 @@
 
 using namespace std;
 
+struct fileData {
+    char* data;
+    int length;
+};
+
 //Function Headers
 void createDateHeader(char* datehdr);
 void createLastModHeader(char* lasthdr, char* fileName);
@@ -42,10 +47,13 @@ void createContentTypeHeader(char* cthdr, char* mt);
 
 char* createStatus(int code);
 char* httpHeader (char* fileName, int code, int sock);
+// struct fileData sendFile(char* fileName);//, int sock);
 void sendFile(char* fileName, int sock);
 
 char* getFileExtension(char* fileName);
 char* createContentLength(char* fileName);
+// char* createContentLength(int length);
+
 
 int main(int argc, char** argv) {
     cout << "---------------Mini HTTP Server---------------" << endl;
@@ -275,6 +283,7 @@ void createDateHeader(char* datehdr) {
     time(&rawtime);
     info = gmtime(&rawtime);
     strftime(buffer, 80, "Date: %a, %d %b %Y %X GMT\r\n", info);
+    // strftime(buffer, 80, "Date: %a, %d %b %Y %X GMT\r\n", info);
     memcpy(datehdr, buffer, strlen(buffer)); 
 }
 
@@ -314,29 +323,37 @@ char* createStatus(int code) {
  * 
  **/
 char* httpHeader (char* fileName, int code, int sock) {
-    char* content = new char[1500];
+    char* content = new char[6000];
     
     // cout << getFileExtension(fileName);
 
     //produce fields to add to header
     char* statusField = createStatus(code);
-    char* dateField = new char[50];
+    char* dateField = new char[100];
     createDateHeader(dateField);
 
+    // struct fileData* fData= sendFile(fileName);//, sock);
+
+    // char* contentLengthField = createContentLength(fData->length);
     char* contentLengthField = createContentLength(fileName);
 
     // Content-Length: <length>
 
     strcpy(content, statusField);
-    strcat(content, dateField);
     strcat(content, contentLengthField);
+    // strcat(content, dateField);
+
+
     //strcpy(content, dateField);
     strcat(content, "\r\n");
 
+    // memcpy(content)
+
     //send header
     send(sock, content, strlen(content), 0);
-    //send appropriate data
+
     sendFile(fileName, sock);
+
 
     delete statusField;
     delete dateField;
@@ -347,14 +364,56 @@ char* httpHeader (char* fileName, int code, int sock) {
     return content;
 }
 
+// char* createContentLength(int length) {//char* fileName) {
 char* createContentLength(char* fileName) {
     char* contentLength = new char[100];
 
     strcpy(contentLength, "Content-Length: ");
+    // cout << "test: " << contentLength << endl;
 
-    int fileLength = 0;
-    // TODO: find file length and concatenate it
-    strcat(contentLength, to_string(fileLength).c_str());
+    // int fileLength = 0;
+    FILE *fptr;
+    size_t length = 0; 
+    ssize_t read;
+    char* data = new char[5000];
+
+    // struct fileData* fData = new struct fileData;
+
+    //if ((fptr = fopen("C:\\program.txt","r")) == NULL){
+    //    printf("Error! opening file");
+    //    // Program exits if the file pointer returns NULL.
+    //    exit(1);
+    //}
+
+    // from https://stackoverflow.com/questions/230062/whats-the-best-way-to-check-if-a-file-exists-in-c-cross-platform
+    // line is fileName here
+    if( access( fileName, F_OK ) != -1 ) {
+        // file exists
+        // printf("File found.\n");
+        fptr = fopen(fileName, "r");
+        //read = getline(&line2, &length, fptr);
+        read = fread(data, 1, 5000, fptr);
+        // printf("Sending, size is %zd\n", read);
+        // send(sock, fileName, read, 0);      
+        // fData->data = data;
+        // fData->length = read; 
+        
+
+
+        //*** +1 added to str causes previous error!
+        //send(clientsocket, line2, strlen(line2)+1, 0);
+        // while ((read = getline(&line2, &length, fptr)) != -1) {
+        //    printf("%s", line2); //for error checking
+        //    //strcat(line3, line2);
+        //    send(clientsocket, line2, strlen(line2), 0);
+        // }
+        //send(clientsocket, line3, strlen(line3)+1, 0);
+    } else {
+        // file doesn't exist
+        printf("The file does not exist!\n");
+    }
+
+    strcat(contentLength, to_string(read).c_str());
     strcat(contentLength, "\r\n");
 
     return contentLength;
@@ -410,11 +469,15 @@ void createContentTypeHeader(char* cthdr, char* mt) {
     //printf(cthdr);
 }
 
+
+// struct fileData* sendFile(char* fileName){//, int sock) {
 void sendFile(char* fileName, int sock) {
     FILE *fptr;
     size_t length = 0; 
     ssize_t read;
-    char data[5000];
+    char* data = new char[5000];
+
+    // struct fileData* fData = new struct fileData;
 
     //if ((fptr = fopen("C:\\program.txt","r")) == NULL){
     //    printf("Error! opening file");
@@ -431,7 +494,10 @@ void sendFile(char* fileName, int sock) {
         //read = getline(&line2, &length, fptr);
         read = fread(data, 1, 5000, fptr);
         printf("Sending, size is %zd\n", read);
-        send(sock, fileName, read, 0);
+        send(sock, fileName, read, 0);      
+        // fData->data = data;
+        // fData->length = read; 
+        
 
         //*** +1 added to str causes previous error!
         //send(clientsocket, line2, strlen(line2)+1, 0);
@@ -445,5 +511,6 @@ void sendFile(char* fileName, int sock) {
         // file doesn't exist
         printf("The file does not exist!\n");
     }
+    // return fData;
 }
 

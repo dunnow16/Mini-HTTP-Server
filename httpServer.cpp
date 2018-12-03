@@ -30,6 +30,7 @@
 #include <string>
 #include <sstream> 
 #include <istream>
+#include <fstream>
 
 #define DEFAULT_SERVER_PORT 8080
 
@@ -52,6 +53,8 @@ int sendFile(char* fileName, int sock);
 char* getFileExtension(char* fileName);
 char* createContentLength(char* fileName);
 // char* createContentLength(int length);
+bool fileExists(char* fileName);
+bool logInfo(string fileName, bool logToFile, string message);
 
 
 int main(int argc, char** argv) {
@@ -171,9 +174,9 @@ int main(int argc, char** argv) {
     // test file / stdout writing
     FILE* pFile;
     if (isLogFile) {
-        pFile = fopen(logfile.c_str(), "w");
-        fprintf(pFile, lasthdr);
-        //fclose(pFile);  // must close for file to update? (tested this)
+        // pFile = fopen(logfile.c_str(), "w");
+        // fprintf(pFile, lasthdr);
+        // fclose(pFile);  // must close for file to update? (tested this)
     }
     //printf(lasthdr);
 
@@ -191,10 +194,14 @@ int main(int argc, char** argv) {
         for (i = 0; i < FD_SETSIZE; i++) {
             if(FD_ISSET(i, &tmp_set)) {
                 if (i == sockfd) {  // accepting clients?
-                    printf("A client connected\n");
+
+                    
                     int len = sizeof(clientaddr);
                     int clientsocket = 
                         accept(sockfd, (struct sockaddr*)&clientaddr, (socklen_t*) &len);
+
+                    logInfo(logfile, isLogFile,
+                        "A client connected on " + to_string(clientsocket) + "\n");
 
                     // Set timeout for each socket.
                     struct timeval timeout; 
@@ -215,14 +222,20 @@ int main(int argc, char** argv) {
                     if(recv_len == 0) {
                         //if the client has closed the connection 
                         //we need to remove the client from the list of sockets
-                        printf("Received zero bytes. Client closed connection.\n");  
+
+                        logInfo(logfile, isLogFile,
+                         "Received zero bytes. Client closed connection.\n");
+
                         close(i);
 						FD_CLR(i, &sockets);
                         continue;
                     }
 
 
-                    printf("got:\n%s\n", line);
+                    // printf("got:\n%s\n", line);
+
+                    logInfo(logfile, isLogFile,
+                        "got:\n" + string(line) + "\n");
 
                     std::stringstream ss(line);
                     std::string to;
@@ -233,10 +246,21 @@ int main(int argc, char** argv) {
                             cout << to <<endl;
 
                             lineNumber++;
-                            
+
+                            // Close connection                            
+                            string connection_close = "Connection: close";
+                            if (strncmp(to.c_str(), connection_close.c_str(), connection_close.length()) == 0) {
+                                logInfo(logfile, isLogFile,
+                                    "Connection closed by client\n");
+                                close(i);
+                                FD_CLR(i, &sockets);
+                                continue;
+                            }
                             // GET request, process it.
-                            if (strncmp(to.c_str(), "GET", 3) == 0) {
-                                printf("GET request\n");
+                            else if (strncmp(to.c_str(), "GET", 3) == 0) {
+                                // logInfo(logfile, isLogFile,
+                                //     "GET request\n");
+                                // printf("GET request\n");
                                 // char noget[] = "Status-Line = HTTP/1.1 200 OK\r\n\r\n";
                                 // char noget[] = "HTTP/1.1 404 Not Found\r\n\r\n";
                                 // send(i, noget, strlen(noget), 0);
@@ -253,14 +277,38 @@ int main(int argc, char** argv) {
                                     // string token = to.substr(0, to.find(delimiter));
                                     to.erase(0, to.find(delimiter) + delimiter.length());
                                     string token = to.substr(0, to.find(delimiter));
-                                    cout << "address: " << token << "\n";
-                                    char* response = httpHeader(((char*)token.c_str())+1, 200, i);
+                                    // cout << "address: " << token << "\n";
+
+                                    char* fullPath = new char[100];
+                                    strcpy(fullPath, directory.c_str());
+                                    strcat(fullPath, token.c_str());
+                                    
+                                    // if (fileExists(((char*)token.c_str())+1)) {
+                                    if (fileExists(fullPath)) {
+                                        // char* response = httpHeader(((char*)token.c_str())+1, 200, i);
+                                        char* response = httpHeader(fullPath, 200, i);
+                                        logInfo(logfile, isLogFile,
+                                            response);
+                                        // logInfo(logfile, isLogFile,
+                                        //     "file sent\n");
+                                    } else {
+                                        char msg404[] = "404NotFound.html";
+                                        char* response = httpHeader(msg404, 404, i);
+                                        logInfo(logfile, isLogFile,
+                                            response);
+                                        // logInfo(logfile, isLogFile,
+                                        //     "file not found\n");
+                                    }
 
                                     // Don't let the client go outside the base directory!        
                                     if (strncmp(token.c_str(), "/..", 3) == 0) {
-                                        cout << "Client tried to escape the base directory\n";
-                                        // TODO log
-                                        // TODO respond with error 400?
+                                        // cout << "Client tried to escape the base directory\n";
+                                        char msg400[] = "400BadRequest.html";
+                                        char* response = httpHeader(msg400, 400, i);
+                                        logInfo(logfile, isLogFile,
+                                            response);
+                                        // logInfo(logfile, isLogFile,
+                                        //     "Client tried to escape the base directory\n");
                                         continue;
                                     }
                                     
@@ -268,7 +316,14 @@ int main(int argc, char** argv) {
                             }
                             // Not a GET request!!!!
                             else if (lineNumber == 1) {
-                                printf("not a GET request\n");
+                                // printf("not a GET request\n");
+                                char msg501[] = "501NotImplemented.html";
+                                char* response = httpHeader(msg501, 501, i);
+                                // logInfo(logfile, isLogFile,
+                                //     "Client attempted a non-GET request\n");
+                                logInfo(logfile, isLogFile,
+                                    response);
+
                                 // char* m
                                 // send(i, ) HTTP/1.1 404 Not Found
                                 //"HTTP/1.1 501 Not Implemented\r\nConnection: close\r\n\r\n"
@@ -286,6 +341,17 @@ int main(int argc, char** argv) {
 
     fclose(pFile);  // must close for file to update? (tested this)
     return 0;
+}
+
+bool logInfo(string fileName, bool logToFile, string message) {
+    if (logToFile) {
+        std::ofstream outfile;
+
+        outfile.open(fileName.c_str(), std::ios_base::app);
+        outfile << message;
+    }
+    cout << message;
+    return true;
 }
 
 /**
@@ -355,10 +421,14 @@ char* httpHeader (char* fileName, int code, int sock) {
     char* contentTypeField = createContentTypeHeader(fileName);
     // Content-Length: <length>
     char* contentLengthField = createContentLength(fileName);
-    
+
+    char* lastModifiedField = new char[100];
+    createLastModHeader(lastModifiedField, fileName);
+
 
     strcpy(content, statusField);
-    // strcpy(content, dateField);
+    strcat(content, dateField);
+    strcat(content, lastModifiedField);
     strcat(content, contentLengthField);
     strcat(content, contentTypeField);
     strcat(content, "\r\n");
@@ -393,37 +463,13 @@ char* createContentLength(char* fileName) {
     ssize_t read;
     char* data = new char[5000];
 
-    // struct fileData* fData = new struct fileData;
-
-    //if ((fptr = fopen("C:\\program.txt","r")) == NULL){
-    //    printf("Error! opening file");
-    //    // Program exits if the file pointer returns NULL.
-    //    exit(1);
-    //}
-
     // from https://stackoverflow.com/questions/230062/whats-the-best-way-to-check-if-a-file-exists-in-c-cross-platform
     // line is fileName here
     if( access( fileName, F_OK ) != -1 ) {
-        // file exists
-        // printf("File found.\n");
         fptr = fopen(fileName, "r");
-        //read = getline(&line2, &length, fptr);
-        read = fread(data, 1, 5000, fptr);
-        // printf("Sending, size is %zd\n", read);
-        // send(sock, fileName, read, 0);      
-        // fData->data = data;
-        // fData->length = read; 
-        
 
-
-        //*** +1 added to str causes previous error!
-        //send(clientsocket, line2, strlen(line2)+1, 0);
-        // while ((read = getline(&line2, &length, fptr)) != -1) {
-        //    printf("%s", line2); //for error checking
-        //    //strcat(line3, line2);
-        //    send(clientsocket, line2, strlen(line2), 0);
-        // }
-        //send(clientsocket, line3, strlen(line3)+1, 0);
+        fseek (fptr, 0, SEEK_END);   // non-portable
+        read = ftell (fptr);        // printf("Sending, size is %zd\n", read);
         fclose(fptr);
     } else {
         // file doesn't exist
@@ -441,23 +487,22 @@ char* createContentLength(char* fileName) {
  * returns 501 for a file type that is unsupported
  */
 char* getFileExtension(char* fileName) {
-    char* extension = new char[15];
+    char* extension = new char[25];
     if (strncmp( fileName + strlen(fileName) - 4, "html", 4) == 0) {
         strcpy(extension, "text/html");
     }
-    //TODO
     else if (strncmp( fileName + strlen(fileName) - 3, "txt", 3) == 0) {
-        memcpy(extension, "text\n", 5);
+        strcpy(extension, "text/plain");
     }
     else if ((strncmp( fileName + strlen(fileName) - 3, "jpg", 3) == 0 ) || 
         (strncmp( fileName + strlen(fileName) - 4, "jpeg", 4) == 0 )) {
-        memcpy(extension, "jpeg\n", 5);
+        strcpy(extension, "image/jpeg");
     }
     else if (strncmp( fileName + strlen(fileName) - 3, "pdf", 3) == 0) {
-        memcpy(extension, "application/pdf", 4);
+        strcpy(extension, "application/pdf");
     }
     else {
-        memcpy(extension, "501\n", 4);
+        memcpy(extension, "501", 3);
     }
 
     return extension;
@@ -508,7 +553,7 @@ void createLastModHeader(char* lasthdr, char* fileName) {
     info = gmtime(&rawtime);  // what the time was in GMT
     // Create the header in proper format:
     strftime(buffer, 80, "Last-Modified: %a, %d %b %Y %X GMT\r\n", info);
-    memcpy(lasthdr, buffer, strlen(buffer)); 
+    memcpy(lasthdr, buffer, strlen(buffer)+1);
     //printf("%s", lasthdr);
 }
 
@@ -672,11 +717,22 @@ void createContentTypeHeader(char* cthdr, char* mt) {
 /**
  * 
  */
+bool fileExists(char* fileName) {
+    // from https://stackoverflow.com/questions/230062/whats-the-best-way-to-check-if-a-file-exists-in-c-cross-platform
+    // line is fileName here
+    if( access( fileName, F_OK ) != -1 ) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 int sendFile(char* fileName, int sock) {
     FILE *fptr;
     size_t length = 0; 
     ssize_t read;
     char* data = new char[5000];
+    int total = 0;
 
     // struct fileData* fData = new struct fileData;
 
@@ -693,23 +749,26 @@ int sendFile(char* fileName, int sock) {
         printf("File found.\n");
         fptr = fopen(fileName, "r");
         //read = getline(&line2, &length, fptr);
-        read = fread(data, 1, 5000, fptr);
-        printf("Sending, size is %zd\n", read);
-        send(sock, data, read, 0);      
+        // read = fread(data, 1, 5000, fptr);
+        // printf("Sending, size is %zd\n", read);
+        // send(sock, data, read, 0);      
         // fData->data = data;
         // fData->length = read; 
         
-
-        //*** +1 added to str causes previous error!
-        //send(clientsocket, line2, strlen(line2)+1, 0);
         // while ((read = getline(&line2, &length, fptr)) != -1) {
         //    printf("%s", line2); //for error checking
         //    //strcat(line3, line2);
         //    send(clientsocket, line2, strlen(line2), 0);
         // }
         //send(clientsocket, line3, strlen(line3)+1, 0);
+        
+        while ((read = fread(data, 1, 5000, fptr)) > 0) {
+            send(sock, data, read, 0);
+            total+=read;
+        }
+
         fclose(fptr);
-        return read;
+        return total;
     } else {
         // file doesn't exist
         printf("The file does not exist!\n");

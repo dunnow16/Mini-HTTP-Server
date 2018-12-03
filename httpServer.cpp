@@ -54,6 +54,7 @@ char* getFileExtension(char* fileName);
 char* createContentLength(char* fileName);
 // char* createContentLength(int length);
 
+bool fileExists(char* fileName);
 
 
 int main(int argc, char** argv) {
@@ -236,7 +237,8 @@ int main(int argc, char** argv) {
                                 // char temp[] = "index.html";
                                 // char temp2[] = "OK";
                                 // char* response = httpHeader(temp, 200, temp2);
-                                char* response = httpHeader("index.html", 200, i);
+
+                                // char* response = httpHeader("index.html", 200, i);
                                 //cout << response << endl;
                                 
                                 string delimiter = " ";
@@ -245,6 +247,18 @@ int main(int argc, char** argv) {
                                     to.erase(0, to.find(delimiter) + delimiter.length());
                                     string token = to.substr(0, to.find(delimiter));
                                     cout << "address: " << token << "\n";
+
+                                    char* fullPath = new char[100];
+                                    strcpy(fullPath, directory.c_str());
+                                    strcat(fullPath, token.c_str());
+                                    
+                                    // if (fileExists(((char*)token.c_str())+1)) {
+                                    if (fileExists(fullPath)) {
+                                        // char* response = httpHeader(((char*)token.c_str())+1, 200, i);
+                                        char* response = httpHeader(fullPath, 200, i);
+                                    } else {
+                                        char* response = httpHeader("404NotFound.html", 404, i);
+                                    }
 
                                     // Don't let the client go outside the base directory!        
                                     if (strncmp(token.c_str(), "/..", 3) == 0) {
@@ -259,6 +273,8 @@ int main(int argc, char** argv) {
                             // Not a GET request!!!!
                             else if (lineNumber == 1) {
                                 printf("not a GET request\n");
+                                char* response = httpHeader("505NotImplemented.html", 505, i);
+
                                 // char* m
                                 // send(i, ) HTTP/1.1 404 Not Found
                                 //"HTTP/1.1 501 Not Implemented\r\nConnection: close\r\n\r\n"
@@ -345,7 +361,7 @@ char* httpHeader (char* fileName, int code, int sock) {
     
 
     strcpy(content, statusField);
-    strcpy(content, dateField);
+    // strcpy(content, dateField);
     strcat(content, contentLengthField);
     strcat(content, contentTypeField);
     strcat(content, "\r\n");
@@ -499,6 +515,16 @@ void createLastModHeader(char* lasthdr, char* fileName) {
     //printf("%s", lasthdr);
 }
 
+bool fileExists(char* fileName) {
+    // from https://stackoverflow.com/questions/230062/whats-the-best-way-to-check-if-a-file-exists-in-c-cross-platform
+    // line is fileName here
+    if( access( fileName, F_OK ) != -1 ) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 int sendFile(char* fileName, int sock) {
     FILE *fptr;
     size_t length = 0; 
@@ -522,7 +548,7 @@ int sendFile(char* fileName, int sock) {
         //read = getline(&line2, &length, fptr);
         read = fread(data, 1, 5000, fptr);
         printf("Sending, size is %zd\n", read);
-        send(sock, fileName, read, 0);      
+        send(sock, data, read, 0);      
         // fData->data = data;
         // fData->length = read; 
         

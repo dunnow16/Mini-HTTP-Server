@@ -187,12 +187,13 @@ int main(int argc, char** argv) {
             if(FD_ISSET(i, &tmp_set)) {
                 if (i == sockfd) {  // accepting clients?
 
-                    logInfo(logfile, isLogFile,
-                        "A client connected\n");
                     
                     int len = sizeof(clientaddr);
                     int clientsocket = 
                         accept(sockfd, (struct sockaddr*)&clientaddr, (socklen_t*) &len);
+
+                    logInfo(logfile, isLogFile,
+                        "A client connected on " + to_string(clientsocket) + "\n");
 
                     // Set timeout for each socket.
                     struct timeval timeout; 
@@ -248,7 +249,7 @@ int main(int argc, char** argv) {
                                 continue;
                             }
                             // GET request, process it.
-                            if (strncmp(to.c_str(), "GET", 3) == 0) {
+                            else if (strncmp(to.c_str(), "GET", 3) == 0) {
                                 // logInfo(logfile, isLogFile,
                                 //     "GET request\n");
                                 // printf("GET request\n");

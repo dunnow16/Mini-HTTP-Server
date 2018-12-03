@@ -291,7 +291,7 @@ int main(int argc, char** argv) {
                             // Not a GET request!!!!
                             else if (lineNumber == 1) {
                                 // printf("not a GET request\n");
-                                char* response = httpHeader("505NotImplemented.html", 505, i);
+                                char* response = httpHeader("501NotImplemented.html", 501, i);
                                 logInfo(logfile, isLogFile,
                                     "Client attempted a non-GET request\n");
 
@@ -339,7 +339,7 @@ void createDateHeader(char* datehdr) {
     info = gmtime(&rawtime);
     strftime(buffer, 80, "Date: %a, %d %b %Y %X GMT\r\n", info);
     // strftime(buffer, 80, "Date: %a, %d %b %Y %X GMT\r\n", info);
-    memcpy(datehdr, buffer, strlen(buffer)+1); 
+    memcpy(datehdr, buffer, strlen(buffer)+1);
 }
 
 char* createStatus(int code) {
@@ -392,7 +392,7 @@ char* httpHeader (char* fileName, int code, int sock) {
     
 
     strcpy(content, statusField);
-    // strcpy(content, dateField);
+    strcat(content, dateField);
     strcat(content, contentLengthField);
     strcat(content, contentTypeField);
     strcat(content, "\r\n");

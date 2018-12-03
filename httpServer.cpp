@@ -41,7 +41,8 @@ void createLastModHeader(char* lasthdr, char* fileName);
 void createContentTypeHeader(char* cthdr, char* mt);
 
 char* createStatus(int code);
-char* httpHeader (char* fileName, int code, char* pstatus);
+char* httpHeader (char* fileName, int code);//, char* pstatus);
+char* getFileExtension(char* fileName);
 
 int main(int argc, char** argv) {
     cout << "---------------Mini HTTP Server---------------" << endl;
@@ -214,7 +215,7 @@ int main(int argc, char** argv) {
                                 // char temp[] = "index.html";
                                 // char temp2[] = "OK";
                                 // char* response = httpHeader(temp, 200, temp2);
-                                char* response = httpHeader("index.html", 200, "OK");
+                                char* response = httpHeader("index.html", 200);//, "OK");
                                 cout << response << endl;
                                 send(i, response, strlen(response), 0);
 
@@ -307,17 +308,23 @@ char* createStatus(int code) {
  * 
  * 
  **/
-char* httpHeader (char* fileName, int code, char* pstatus) {
+// char* httpHeader (char* fileName, int code, char* pstatus) {
+char* httpHeader (char* fileName, int code) {// char* pstatus) {
     char* content = new char[1500];
     
+    // cout << getFileExtension(fileName);
+
     //produce fields to add to header
     char* statusField = createStatus(code);
     char* dateField = new char[50];
     createDateHeader(dateField);
 
+    // Content-Length: <length>
+
     strcpy(content, statusField);
     strcat(content, dateField);
     //strcpy(content, dateField);
+    strcat(content, "\r\n");
 
     delete statusField;
     delete dateField;
@@ -326,6 +333,29 @@ char* httpHeader (char* fileName, int code, char* pstatus) {
 
     return content;
 }
+
+char* createContentLength(char* fileName) {
+    char* contentLength = new char[100];
+
+    strcpy(contentLength, "Content-Length: ");
+
+    int fileLength = 0;
+    // TODO: find file length and concatenate it
+    strcat(contentLength, to_string(fileLength).c_str());
+    strcat(contentLength, "\r\n");
+
+    return contentLength;
+}
+
+char* getFileExtension(char* fileName) {
+    char* extension = new char[5];
+    if (strncmp( fileName + strlen(fileName) - 4, "html", 4) == 0) {
+        memcpy(extension, "html\n", 5);
+    }
+
+    return extension;
+}
+
 
 /**
  * Return a header of the last time a file was modified.
@@ -360,7 +390,7 @@ void createLastModHeader(char* lasthdr, char* fileName) {
 
 /**
  * Return a content type header.
- * todo wa to find content type without hard coding? 
+ * todo way to find content type without hard coding? 
  */
 void createContentTypeHeader(char* cthdr, char* mt) {
     sprintf(cthdr, "Content-Type: %s\r\n", mt);

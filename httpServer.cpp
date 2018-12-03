@@ -345,7 +345,7 @@ char* httpHeader (char* fileName, int code, int sock) {
     
 
     strcpy(content, statusField);
-    strcpy(content, dateField);
+    // strcpy(content, dateField);
     strcat(content, contentLengthField);
     strcat(content, contentTypeField);
     strcat(content, "\r\n");
@@ -523,7 +523,7 @@ int sendFile(char* fileName, int sock) {
         //read = getline(&line2, &length, fptr);
         read = fread(data, 1, 5000, fptr);
         printf("Sending, size is %zd\n", read);
-        send(sock, fileName, read, 0);      
+        send(sock, data, read, 0);      
         // fData->data = data;
         // fData->length = read; 
         

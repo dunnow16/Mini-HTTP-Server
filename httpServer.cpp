@@ -159,13 +159,13 @@ int main(int argc, char** argv) {
     // char tmp2[] = "pdf"; 
     // char* cthdr = new char[80];
     // createContentTypeHeader(cthdr, tmp2);
-    char fn[] = "project4 notes";
-    char isModHdr[] = "If-Modified-Since: Mon, 03 2018 16:45:02 GMT";
-    if (isFileModifiedSince(isModHdr, fn)) {
-        printf("Modified!\n");
-    } else {
-        printf("Not modified!\n");
-    }
+    // char fn[] = "project4 notes";
+    // char isModHdr[] = "If-Modified-Since: Mon, 29 Nov 2018 16:45:02 GMT";
+    // if (isFileModifiedSince(isModHdr, fn)) {
+    //     printf("Modified!\n");
+    // } else {
+    //     printf("Not modified!\n");
+    // }
 
     // Open file for writing and return pointer to file object.
     // test file / stdout writing
@@ -517,70 +517,145 @@ void createLastModHeader(char* lasthdr, char* fileName) {
  * the client asked.
  */
 bool isFileModifiedSince(char* ifModSinceHdr, char* fileName) {
-    char temp[100];
+    char* temp = new char[100];
     memcpy(temp, ifModSinceHdr, strlen(ifModSinceHdr)+1);
 
     // get all values from the changed since string
-    char* token;
+    char* token; 
+    char* p;
     char day[100];
+    printf("given header: %s\n", ifModSinceHdr);
     token = strtok(temp, " ,:");
     memcpy(day, token, strlen(token)+1);
     printf("%s\n", token);
-    int dayInt = atoi(strtok(NULL, " ,:"));
-    int month = atoi(strtok(NULL, " ,:"));
-    int year = atoi(strtok(NULL, " ,:"));
-    int hour = atoi(strtok(NULL, " ,:"));
-    int minute = atoi(strtok(NULL, " ,:"));
-    int second = atoi(strtok(NULL, " ,:"));
-
-    // Create a tm stucture to use to compare times easily (ended up not doing this, save below just in case..)
-    // struct tm since_tm;
-    // if (strcmp(day, "Sun") == 0) {
-    //     since_tm.tm_wday = 0;
-    // } else if (strcmp(day, "Mon") == 0) {
-    //     since_tm.tm_wday = 1;
-    // } else if (strcmp(day, "Tue") == 0) {
-    //     since_tm.tm_wday = 2;
-    // } else if (strcmp(day, "Wed") == 0) {
-    //     since_tm.tm_wday = 3;
-    // } else if (strcmp(day, "Thu") == 0) {
-    //     since_tm.tm_wday = 4;
-    // } else if (strcmp(day, "Fri") == 0) {
-    //     since_tm.tm_wday = 5;
-    // } else if (strcmp(day, "Sat") == 0) {
-    //     since_tm.tm_wday = 6;
-    // } else {
-    //     printf("Day value not matched, has: %s\n", day);
-    // }
+    token = strtok(NULL, " ,:");
+    printf("%s\n", token);
+    token = strtok(NULL, " ,:");
+    int dayInt = strtol(token, &p, 10);
+    printf("day: %d\n", dayInt);
+    token = strtok(NULL, " ,:");
+    int month;
+    if(strcmp(token, "Jan")==0){
+        month = 1;
+    }else if(strcmp(token, "Feb")==0){
+        month = 2;
+    }else if(strcmp(token, "Mar")==0){
+        month = 3;
+    }else if(strcmp(token, "Apr")==0){
+        month = 4;
+    }else if(strcmp(token, "May")==0){
+        month = 5;
+    }else if(strcmp(token, "Jun")==0){
+        month = 6;
+    }else if(strcmp(token, "Jul")==0){
+        month = 7;
+    }else if(strcmp(token, "Aug")==0){
+        month = 8;
+    }else if(strcmp(token, "Sep")==0){
+        month = 9;
+    }else if(strcmp(token, "Oct")==0){
+        month = 10;
+    }else if(strcmp(token, "Nov")==0){
+        month = 11;
+    }else if(strcmp(token, "Dec")==0){
+        month = 12;
+    }
+    printf("month: %d\n", month);
+    token = strtok(NULL, " ,:");
+    int year = strtol(token, &p, 10);
+    printf("year: %d\n", year);
+    token = strtok(NULL, " ,:");
+    int hour = strtol(token, &p, 10);
+    printf("hour: %d\n", hour);
+    token = strtok(NULL, " ,:");
+    int minute = strtol(token, &p, 10);
+    printf("minute: %d\n", minute);
+    token = strtok(NULL, " ,:");
+    int second = strtol(token, &p, 10);
+    printf("second: %d\n", second);
 
     // get values from file string
-    char* fileLastHdr;
+    char* fileLastHdr = new char[100];
     createLastModHeader(fileLastHdr, fileName);
+    printf("file header: %s", fileLastHdr);
     char dayf[100];
-    memset(temp, '\0', 100); 
+    delete temp;
+    temp = new char[100];
     memcpy(temp, fileLastHdr, strlen(fileLastHdr)+1);
     token = strtok(temp, " ,:");
+    printf("%s\n", token);
+    token = strtok(NULL, " ,:");
+    printf("%s\n", token);
     memcpy(dayf, token, strlen(token)+1);
-    int dayIntf = atoi(strtok(NULL, " ,:"));
-    int monthf = atoi(strtok(NULL, " ,:"));
-    int yearf = atoi(strtok(NULL, " ,:"));
-    int hourf = atoi(strtok(NULL, " ,:"));
-    int minutef = atoi(strtok(NULL, " ,:"));
-    int secondf = atoi(strtok(NULL, " ,:"));
+    token = strtok(NULL, " ,:");
+    int dayIntf = strtol(token, &p, 10);
+    printf("day: %d\n", dayIntf);
+    int monthf;
+    token = strtok(NULL, " ,:");
+    if(strcmp(token, "Jan")==0){
+        monthf = 1;
+    }else if(strcmp(token, "Feb")==0){
+        monthf = 2;
+    }else if(strcmp(token, "Mar")==0){
+        monthf = 3;
+    }else if(strcmp(token, "Apr")==0){
+        monthf = 4;
+    }else if(strcmp(token, "May")==0){
+        monthf = 5;
+    }else if(strcmp(token, "Jun")==0){
+        monthf = 6;
+    }else if(strcmp(token, "Jul")==0){
+        monthf = 7;
+    }else if(strcmp(token, "Aug")==0){
+        monthf = 8;
+    }else if(strcmp(token, "Sep")==0){
+        monthf = 9;
+    }else if(strcmp(token, "Oct")==0){
+        monthf = 10;
+    }else if(strcmp(token, "Nov")==0){
+        monthf = 11;
+    }else if(strcmp(token, "Dec")==0){
+        monthf = 12;
+    }
+    printf("month: %d\n", monthf);
+    token = strtok(NULL, " ,:");
+    int yearf = strtol(token, &p, 10);
+    printf("year: %d\n", yearf);
+    token = strtok(NULL, " ,:");
+    int hourf = strtol(token, &p, 10);
+    printf("hour: %d\n", hourf);
+    token = strtok(NULL, " ,:");
+    int minutef = strtol(token, &p, 10);
+    printf("minute: %d\n", minutef);
+    token = strtok(NULL, " ,:");
+    int secondf = strtol(token, &p, 10);
+    printf("second: %d\n", secondf);
 
     // now compare values to find if changed since:
     if (yearf > year) {
         return true;
+    } else if (yearf < year){
+        return false;
     } else if (monthf > month) {
         return true;
+    } else if (monthf < month){ 
+        return false;
     } else if (dayIntf > dayInt) {
         return true;
+    } else if (dayIntf < dayInt) {
+        return false;
     } else if (hourf > hour) {
         return true;
+    } else if (hourf < hour) {
+        return false;
     } else if (minutef > minute) {
         return true;
+    } else if (minutef < minute) {
+        return false;
     } else if (secondf > second) {
         return true;
+    } else if (secondf < second) {
+        return false;
     }
     return false;
 }

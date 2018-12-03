@@ -273,7 +273,7 @@ int main(int argc, char** argv) {
                             // Not a GET request!!!!
                             else if (lineNumber == 1) {
                                 printf("not a GET request\n");
-                                char* response = httpHeader("505NotImplemented.html", 505, i);
+                                char* response = httpHeader("501NotImplemented.html", 501, i);
 
                                 // char* m
                                 // send(i, ) HTTP/1.1 404 Not Found
@@ -530,6 +530,7 @@ int sendFile(char* fileName, int sock) {
     size_t length = 0; 
     ssize_t read;
     char* data = new char[5000];
+    int total = 0;
 
     // struct fileData* fData = new struct fileData;
 
@@ -546,23 +547,26 @@ int sendFile(char* fileName, int sock) {
         printf("File found.\n");
         fptr = fopen(fileName, "r");
         //read = getline(&line2, &length, fptr);
-        read = fread(data, 1, 5000, fptr);
-        printf("Sending, size is %zd\n", read);
-        send(sock, data, read, 0);      
+        // read = fread(data, 1, 5000, fptr);
+        // printf("Sending, size is %zd\n", read);
+        // send(sock, data, read, 0);      
         // fData->data = data;
         // fData->length = read; 
         
-
-        //*** +1 added to str causes previous error!
-        //send(clientsocket, line2, strlen(line2)+1, 0);
         // while ((read = getline(&line2, &length, fptr)) != -1) {
         //    printf("%s", line2); //for error checking
         //    //strcat(line3, line2);
         //    send(clientsocket, line2, strlen(line2), 0);
         // }
         //send(clientsocket, line3, strlen(line3)+1, 0);
+        
+        while ((read = fread(data, 1, 5000, fptr)) > 0) {
+            send(sock, data, read, 0);
+            total+=read;
+        }
+
         fclose(fptr);
-        return read;
+        return total;
     } else {
         // file doesn't exist
         printf("The file does not exist!\n");

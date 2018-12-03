@@ -42,7 +42,10 @@ void createContentTypeHeader(char* cthdr, char* mt);
 
 char* createStatus(int code);
 char* httpHeader (char* fileName, int code, int sock);
-void sendFile(char* fName, int sock);
+void sendFile(char* fileName, int sock);
+
+char* getFileExtension(char* fileName);
+char* createContentLength(char* fileName);
 
 int main(int argc, char** argv) {
     cout << "---------------Mini HTTP Server---------------" << endl;
@@ -313,13 +316,20 @@ char* createStatus(int code) {
 char* httpHeader (char* fileName, int code, int sock) {
     char* content = new char[1500];
     
+    // cout << getFileExtension(fileName);
+
     //produce fields to add to header
     char* statusField = createStatus(code);
     char* dateField = new char[50];
     createDateHeader(dateField);
 
+    char* contentLengthField = createContentLength(fileName);
+
+    // Content-Length: <length>
+
     strcpy(content, statusField);
     strcat(content, dateField);
+    strcat(content, contentLengthField);
     //strcpy(content, dateField);
     strcat(content, "\r\n");
 
@@ -330,11 +340,35 @@ char* httpHeader (char* fileName, int code, int sock) {
 
     delete statusField;
     delete dateField;
+    delete contentLengthField;
 
     cout << content << endl;
 
     return content;
 }
+
+char* createContentLength(char* fileName) {
+    char* contentLength = new char[100];
+
+    strcpy(contentLength, "Content-Length: ");
+
+    int fileLength = 0;
+    // TODO: find file length and concatenate it
+    strcat(contentLength, to_string(fileLength).c_str());
+    strcat(contentLength, "\r\n");
+
+    return contentLength;
+}
+
+char* getFileExtension(char* fileName) {
+    char* extension = new char[5];
+    if (strncmp( fileName + strlen(fileName) - 4, "html", 4) == 0) {
+        memcpy(extension, "html\n", 5);
+    }
+
+    return extension;
+}
+
 
 /**
  * Return a header of the last time a file was modified.
@@ -376,7 +410,7 @@ void createContentTypeHeader(char* cthdr, char* mt) {
     //printf(cthdr);
 }
 
-void sendFile(char* fName, int sock) {
+void sendFile(char* fileName, int sock) {
     FILE *fptr;
     size_t length = 0; 
     ssize_t read;
@@ -389,15 +423,15 @@ void sendFile(char* fName, int sock) {
     //}
 
     // from https://stackoverflow.com/questions/230062/whats-the-best-way-to-check-if-a-file-exists-in-c-cross-platform
-    // line is fname here
-    if( access( fName, F_OK ) != -1 ) {
+    // line is fileName here
+    if( access( fileName, F_OK ) != -1 ) {
         // file exists
         printf("File found.\n");
-        fptr = fopen(fName, "r");
+        fptr = fopen(fileName, "r");
         //read = getline(&line2, &length, fptr);
         read = fread(data, 1, 5000, fptr);
         printf("Sending, size is %zd\n", read);
-        send(sock, fName, read, 0);
+        send(sock, fileName, read, 0);
 
         //*** +1 added to str causes previous error!
         //send(clientsocket, line2, strlen(line2)+1, 0);

@@ -43,6 +43,7 @@ void createContentTypeHeader(char* cthdr, char* mt);
 char* createStatus(int code);
 char* httpHeader (char* fileName, int code);//, char* pstatus);
 char* getFileExtension(char* fileName);
+char* createContentLength(char* fileName);
 
 int main(int argc, char** argv) {
     cout << "---------------Mini HTTP Server---------------" << endl;
@@ -319,10 +320,13 @@ char* httpHeader (char* fileName, int code) {// char* pstatus) {
     char* dateField = new char[50];
     createDateHeader(dateField);
 
+    char* contentLengthField = createContentLength(fileName);
+
     // Content-Length: <length>
 
     strcpy(content, statusField);
     strcat(content, dateField);
+    strcat(content, contentLengthField);
     //strcpy(content, dateField);
     strcat(content, "\r\n");
 

@@ -332,6 +332,7 @@ char* httpHeader (char* fileName, int code) {// char* pstatus) {
 
     delete statusField;
     delete dateField;
+    delete contentLengthField;
 
     cout << content << endl;
 

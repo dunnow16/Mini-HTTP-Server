@@ -143,11 +143,6 @@ int main(int argc, char** argv) {
     bind(sockfd, (struct sockaddr*) &serveraddr, sizeof(serveraddr));
     listen(sockfd, 10);
 
-    // select() related code (if using)
-    fd_set sockets;
-    FD_ZERO(&sockets);
-    FD_SET(sockfd, &sockets);
-
     // test date header
     char* datehdr = new char[80];
     createDateHeader(datehdr);
@@ -187,10 +182,33 @@ int main(int argc, char** argv) {
     // given request.
     bool quit = false;
     int i;
+    struct timeval tv; 
+
+    // select() related code
+    fd_set sockets;
+    FD_ZERO(&sockets);
+    FD_SET(sockfd, &sockets);
+
     while(!quit) {
         fd_set tmp_set = sockets;
+        tv.tv_sec = 20;
+        tv.tv_usec = 0;
 		//checks to see if we can read from the sockets
-		int n = select(FD_SETSIZE, &tmp_set, NULL, NULL, NULL);  // todo timeout time for last arg
+		int n = select(FD_SETSIZE, &tmp_set, NULL, NULL, &tv);  // todo timeout time for last arg
+        cout << "select reached" << endl;
+        if (n <= 0) {
+            cout << "TIMEOUT REACHED\n EXITING..." << endl;
+            for (int j = 0; j < FD_SETSIZE; j++) {
+                cout << "Socket "<< j <<" cleared..." << endl;	
+		        close(j);
+		        FD_CLR(j, &sockets);
+	        }
+            return 0;
+        }
+        // if (tv.tv_sec <= 0) {
+        //     cout << "TIMEOUT 2 REACHED\n EXITING (TV)..." << endl;
+        //     return 0;
+        // }
         for (i = 0; i < FD_SETSIZE; i++) {
             if(FD_ISSET(i, &tmp_set)) {
                 if (i == sockfd) {  // accepting clients?
@@ -201,9 +219,9 @@ int main(int argc, char** argv) {
                     logInfo(logfile, isLogFile,
                         "A client connected on " + to_string(clientsocket) + "\n");
 
-                    // Set timeout for each socket.
+                    // Set timeout for each socket?
                     struct timeval timeout; 
-                    timeout.tv_sec = 20; 
+                    timeout.tv_sec = 1; 
                     timeout.tv_usec = 0;
 
                     setsockopt(clientsocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
@@ -211,6 +229,7 @@ int main(int argc, char** argv) {
                 }
                 // Existing client, serve them
                 else {
+
                     char* line = new char[5000];  // TODO will mem leaks cause a crash if runs too long?
                     // unsigned char* line = new unsigned char[5000];
                     // i is our socket number
@@ -366,6 +385,11 @@ int main(int argc, char** argv) {
             }
         }
     }
+
+    for (int j = 0; j < FD_SETSIZE; j++) {	
+		close(j);
+		FD_CLR(j, &sockets);
+	}
 
     fclose(pFile);  // must close for file to update? (tested this)
     return 0;

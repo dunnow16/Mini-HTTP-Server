@@ -261,6 +261,7 @@ int main(int argc, char** argv) {
                                 string if_modified_str;
                                 int lineNumber = 0;
                                 while(std::getline(ss2,to2,'\n')) {
+                                    // print recieved header
                                     cout << to2 <<endl;
                                     string if_modified_since("If-Modified-Since");
                                     if (strncmp(to2.c_str(),  if_modified_since.c_str(), if_modified_since.length()) == 0) {
@@ -452,43 +453,43 @@ char* httpHeader (char* fileName, int code, int sock) {
     char* lastModifiedField = new char[100];
     createLastModHeader(lastModifiedField, fileName);
 
-    // if (code == 304) {
-    //     //do not resend file if it is in their cache
-    //     strcpy(content, statusField);
-    //     strcat(content, "\r\n");
-
-    //     //send header
-    //     send(sock, content, strlen(content), 0);        
-    // } else {
-    //     strcpy(content, statusField);
-    //     strcat(content, dateField);
-    //     strcat(content, lastModifiedField);
-    //     strcat(content, contentLengthField);
-    //     strcat(content, contentTypeField);
-    //     strcat(content, "\r\n");
-
-    //     //memcpy(content)
-
-    //     //send header
-    //     send(sock, content, strlen(content), 0);
-
-    //     sendFile(fileName, sock);
-
-    strcpy(content, statusField);
-    strcat(content, dateField);
-    strcat(content, lastModifiedField);
-    strcat(content, contentLengthField);
-    strcat(content, contentTypeField);
-    strcat(content, "\r\n");
-
-    //send header
-    send(sock, content, strlen(content), 0);
-
     if (code == 304) {
         //do not resend file if it is in their cache
+        strcpy(content, statusField);
+        strcat(content, dateField);
+        strcat(content, "\r\n");
+
+        //send header
+        send(sock, content, strlen(content), 0);        
     } else {
+        strcpy(content, statusField);
+        strcat(content, dateField);
+        strcat(content, lastModifiedField);
+        strcat(content, contentLengthField);
+        strcat(content, contentTypeField);
+        strcat(content, "\r\n");
+
+        //send header
+        send(sock, content, strlen(content), 0);
+
         sendFile(fileName, sock);
-    }   
+    }
+
+    // strcpy(content, statusField);
+    // strcat(content, dateField);
+    // strcat(content, lastModifiedField);
+    // strcat(content, contentLengthField);
+    // strcat(content, contentTypeField);
+    // strcat(content, "\r\n");
+
+    // //send header
+    // send(sock, content, strlen(content), 0);
+
+    // if (code == 304) {
+    //     //do not resend file if it is in their cache
+    // } else {
+    //     sendFile(fileName, sock);
+    // }   
 
     delete statusField;
     delete dateField;
@@ -496,7 +497,7 @@ char* httpHeader (char* fileName, int code, int sock) {
     delete contentLengthField;
     delete contentTypeField;
 
-    cout << content << endl;
+    // cout << content << endl;
 
     return content;
 }

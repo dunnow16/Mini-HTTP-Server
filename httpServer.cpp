@@ -203,7 +203,7 @@ int main(int argc, char** argv) {
 
                     // Set timeout for each socket.
                     struct timeval timeout; 
-                    timeout.tv_sec = 20; //TODO 20sec
+                    timeout.tv_sec = 20; 
                     timeout.tv_usec = 0;
 
                     setsockopt(clientsocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
@@ -220,7 +220,6 @@ int main(int argc, char** argv) {
                     if(recv_len == 0) {
                         //if the client has closed the connection 
                         //we need to remove the client from the list of sockets
-
                         logInfo(logfile, isLogFile,
                          "Received zero bytes. Client closed connection.\n");
 
@@ -255,12 +254,14 @@ int main(int argc, char** argv) {
                             }
                             // GET request, process it.
                             else if (strncmp(to.c_str(), "GET", 3) == 0) {
+
                                 std::stringstream ss2(line);
                                 std::string to2;
                                 bool have_if_modified = false;
                                 string if_modified_str;
                                 int lineNumber = 0;
                                 while(std::getline(ss2,to2,'\n')) {
+                                    // print recieved header
                                     cout << to2 <<endl;
                                     string if_modified_since("If-Modified-Since");
                                     if (strncmp(to2.c_str(),  if_modified_since.c_str(), if_modified_since.length()) == 0) {
@@ -294,8 +295,8 @@ int main(int argc, char** argv) {
 
                                 char* fullPath = new char[100];
                                 strcpy(fullPath, directory.c_str());  // directory is "." by default
-                                strcat(fullPath, token.c_str()); 
-
+                                strcat(fullPath, token.c_str());
+                                
                                 // if (fileExists(((char*)token.c_str())+1)) {
                                 if (fileExists(fullPath)) {
 
@@ -305,7 +306,7 @@ int main(int argc, char** argv) {
                                         update = isFileModifiedSince((char*) if_modified_str.c_str(), fullPath);
                                     }
 
-                                    if (update) {  // file has changed
+                                    if (update) {
                                         // char* response = httpHeader(((char*)token.c_str())+1, 200, i);
                                         char* response = httpHeader(fullPath, 200, i);
                                         logInfo(logfile, isLogFile,
@@ -314,8 +315,8 @@ int main(int argc, char** argv) {
                                         //     "file sent\n");
                                     } else {
                                         char* response = httpHeader(fullPath, 304, i);
-                                        logInfo(logfile, isLogFile,
-                                            "File not modified\n");
+                                        logInfo(logfile, isLogFile, response);
+                                            //"File not modified\n");
                                     }
                                 } else {  // file doesn't exist (just not in current directory?)
                                     char msg404[] = "404NotFound.html";
@@ -325,18 +326,18 @@ int main(int argc, char** argv) {
                                     // logInfo(logfile, isLogFile,
                                     //     "file not found\n");
                                 }
-
-                                // Don't let the client go outside the base directory!        
-                                if (strncmp(token.c_str(), "/..", 3) == 0) {
-                                    // cout << "Client tried to escape the base directory\n";
-                                    char msg400[] = "400BadRequest.html";
-                                    char* response = httpHeader(msg400, 400, i);
-                                    logInfo(logfile, isLogFile,
-                                        response);
-                                    // logInfo(logfile, isLogFile,
-                                    //     "Client tried to escape the base directory\n");
-                                    continue;
-                                }
+                            } 
+                            // Don't let the client go outside the base directory!        
+                            if (strncmp(token.c_str(), "/..", 3) == 0) {
+                                // cout << "Client tried to escape the base directory\n";
+                                char msg400[] = "400BadRequest.html";
+                                char* response = httpHeader(msg400, 400, i);
+                                logInfo(logfile, isLogFile,
+                                    response);
+                                // logInfo(logfile, isLogFile,
+                                //     "Client tried to escape the base directory\n");
+                                continue;
+                            }
                                 
                             // }
                             }
@@ -455,13 +456,15 @@ char* httpHeader (char* fileName, int code, int sock) {
     char* lastModifiedField = new char[100];
     createLastModHeader(lastModifiedField, fileName);
 
-
     if (code == 304) {
+        //do not resend file if it is in their cache
         strcpy(content, statusField);
+        strcat(content, dateField);
         strcat(content, "\r\n");
 
+        //send header
+        send(sock, content, strlen(content), 0);        
     } else {
-
         strcpy(content, statusField);
         strcat(content, dateField);
         strcat(content, lastModifiedField);
@@ -469,20 +472,35 @@ char* httpHeader (char* fileName, int code, int sock) {
         strcat(content, contentTypeField);
         strcat(content, "\r\n");
 
-        // memcpy(content)
-
         //send header
         send(sock, content, strlen(content), 0);
 
         sendFile(fileName, sock);
     }
 
+    // strcpy(content, statusField);
+    // strcat(content, dateField);
+    // strcat(content, lastModifiedField);
+    // strcat(content, contentLengthField);
+    // strcat(content, contentTypeField);
+    // strcat(content, "\r\n");
+
+    // //send header
+    // send(sock, content, strlen(content), 0);
+
+    // if (code == 304) {
+    //     //do not resend file if it is in their cache
+    // } else {
+    //     sendFile(fileName, sock);
+    // }   
 
     delete statusField;
     delete dateField;
+    delete lastModifiedField;
     delete contentLengthField;
+    delete contentTypeField;
 
-    cout << content << endl;
+    // cout << content << endl;
 
     return content;
 }

@@ -195,7 +195,7 @@ int main(int argc, char** argv) {
         tv.tv_usec = 0;
 		//checks to see if we can read from the sockets
 		int n = select(FD_SETSIZE, &tmp_set, NULL, NULL, &tv);  // todo timeout time for last arg
-        cout << "select reached" << endl;
+        //cout << "select reached" << endl;
         if (n <= 0) {
             cout << "TIMEOUT REACHED\n EXITING..." << endl;
             for (int j = 0; j < FD_SETSIZE; j++) {

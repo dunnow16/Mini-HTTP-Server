@@ -16,7 +16,7 @@ fstat(), stat() with C to get, lastModified() with Java
 only supported types
 6) length:
 7)
-http/1.1 200 OK /r/n
+HTTP/1.1 200 OK /r/n
 \r\n
 (file contents)
 -don't have to place all of heaqder and contents all at once in a buffer

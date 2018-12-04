@@ -44,20 +44,18 @@ struct fileData {
 //Function Headers
 void createDateHeader(char* datehdr);
 void createLastModHeader(char* lasthdr, char* fileName);
+bool isFileModifiedSince(char* ifModSinceHdr, char* fileName);
 // void createContentTypeHeader(char* cthdr, char* mt);
 char* createContentTypeHeader(char* fileName);
-
 char* createStatus(int code);
 char* httpHeader (char* fileName, int code, int sock);
 int sendFile(char* fileName, int sock);
-
 char* getFileExtension(char* fileName);
 char* createContentLength(char* fileName);
 // char* createContentLength(int length);
-
 bool fileExists(char* fileName);
-
 bool logInfo(string fileName, bool logToFile, string message);
+
 
 int main(int argc, char** argv) {
     cout << "---------------Mini HTTP Server---------------" << endl;
@@ -164,6 +162,13 @@ int main(int argc, char** argv) {
     // char tmp2[] = "pdf"; 
     // char* cthdr = new char[80];
     // createContentTypeHeader(cthdr, tmp2);
+    // char fn[] = "project4 notes";
+    // char isModHdr[] = "If-Modified-Since: Mon, 29 Nov 2018 16:45:02 GMT";
+    // if (isFileModifiedSince(isModHdr, fn)) {
+    //     printf("Modified!\n");
+    // } else {
+    //     printf("Not modified!\n");
+    // }
 
     // Open file for writing and return pointer to file object.
     // test file / stdout writing
@@ -174,6 +179,9 @@ int main(int argc, char** argv) {
         // fclose(pFile);  // must close for file to update? (tested this)
     }
     //printf(lasthdr);
+
+    // char tmp3[] = "If-Modified-Since: Mon, 4 6 2018 22:15:12 GMT";
+    // isFileModified(tmp3, fn); 
 
     // Accept client requests from a browser. Send a response fitting a
     // given request.
@@ -234,7 +242,7 @@ int main(int argc, char** argv) {
                     int lineNumber = 0;
                     if (line != NULL) {
                         while(std::getline(ss,to,'\n')) {
-                            cout << to <<endl;
+                            // cout << to <<endl;
 
                             lineNumber++;
 
@@ -249,7 +257,24 @@ int main(int argc, char** argv) {
                             }
                             // GET request, process it.
                             else if (strncmp(to.c_str(), "GET", 3) == 0) {
-                                
+
+                                std::stringstream ss2(line);
+                                std::string to2;
+                                bool have_if_modified = false;
+                                string if_modified_str;
+                                int lineNumber = 0;
+                                    while(std::getline(ss2,to2,'\n')) {
+                                        cout << to2 <<endl;
+                                        string if_modified_since("If-Modified-Since");
+                                        if (strncmp(to2.c_str(),  if_modified_since.c_str(), if_modified_since.length()) == 0) {
+                                            cout << "found if modified" << endl;
+                                            have_if_modified = true;
+                                            if_modified_str = to2;
+                                            break;
+                                    }
+
+                                }
+
                                 // logInfo(logfile, isLogFile,
                                 //     "GET request\n");
                                 // printf("GET request\n");
@@ -275,16 +300,31 @@ int main(int argc, char** argv) {
                                     strcpy(fullPath, directory.c_str());
                                     strcat(fullPath, token.c_str());
                                     
+
                                     // if (fileExists(((char*)token.c_str())+1)) {
                                     if (fileExists(fullPath)) {
-                                        // char* response = httpHeader(((char*)token.c_str())+1, 200, i);
-                                        char* response = httpHeader(fullPath, 200, i);
-                                        logInfo(logfile, isLogFile,
-                                            response);
-                                        // logInfo(logfile, isLogFile,
-                                        //     "file sent\n");
+
+                                        bool update = true;
+                                        if (have_if_modified) {
+                                            cout << "using for comparison " << if_modified_str << endl;
+                                            update = isFileModifiedSince((char*) if_modified_str.c_str(), fullPath);
+                                        }
+
+                                        if (update) {
+                                            // char* response = httpHeader(((char*)token.c_str())+1, 200, i);
+                                            char* response = httpHeader(fullPath, 200, i);
+                                            logInfo(logfile, isLogFile,
+                                                response);
+                                            // logInfo(logfile, isLogFile,
+                                            //     "file sent\n");
+                                        } else {
+                                            char* response = httpHeader(fullPath, 304, i);
+                                            logInfo(logfile, isLogFile, response);
+                                                //"File not modified\n");
+                                        }
                                     } else {
-                                        char* response = httpHeader("404NotFound.html", 404, i);
+                                        char msg404[] = "404NotFound.html";
+                                        char* response = httpHeader(msg404, 404, i);
                                         logInfo(logfile, isLogFile,
                                             response);
                                         // logInfo(logfile, isLogFile,
@@ -294,7 +334,8 @@ int main(int argc, char** argv) {
                                     // Don't let the client go outside the base directory!        
                                     if (strncmp(token.c_str(), "/..", 3) == 0) {
                                         // cout << "Client tried to escape the base directory\n";
-                                        char* response = httpHeader("400BadRequest.html", 400, i);
+                                        char msg400[] = "400BadRequest.html";
+                                        char* response = httpHeader(msg400, 400, i);
                                         logInfo(logfile, isLogFile,
                                             response);
                                         // logInfo(logfile, isLogFile,
@@ -307,7 +348,8 @@ int main(int argc, char** argv) {
                             // Not a GET request!!!!
                             else if (lineNumber == 1) {
                                 // printf("not a GET request\n");
-                                char* response = httpHeader("501NotImplemented.html", 501, i);
+                                char msg501[] = "501NotImplemented.html";
+                                char* response = httpHeader(msg501, 501, i);
                                 // logInfo(logfile, isLogFile,
                                 //     "Client attempted a non-GET request\n");
                                 logInfo(logfile, isLogFile,
@@ -355,11 +397,14 @@ void createDateHeader(char* datehdr) {
 
     time(&rawtime);
     info = gmtime(&rawtime);
-    strftime(buffer, 80, "Date: %a, %d %b %Y %X GMT\r\n", info);
+    strftime(buffer, 80, "Date: %a, %d %b %Y %X GMT\r\n", info);  // adds null
     // strftime(buffer, 80, "Date: %a, %d %b %Y %X GMT\r\n", info);
-    memcpy(datehdr, buffer, strlen(buffer)+1);
+    memcpy(datehdr, buffer, strlen(buffer)+1); // strlen doesn't include null term
 }
 
+/**
+ * 
+ */
 char* createStatus(int code) {
     char* status = new char[100];
     strcpy(status, "HTTP/1.1 ");
@@ -411,6 +456,27 @@ char* httpHeader (char* fileName, int code, int sock) {
     char* lastModifiedField = new char[100];
     createLastModHeader(lastModifiedField, fileName);
 
+    // if (code == 304) {
+    //     //do not resend file if it is in their cache
+    //     strcpy(content, statusField);
+    //     strcat(content, "\r\n");
+
+    //     //send header
+    //     send(sock, content, strlen(content), 0);        
+    // } else {
+    //     strcpy(content, statusField);
+    //     strcat(content, dateField);
+    //     strcat(content, lastModifiedField);
+    //     strcat(content, contentLengthField);
+    //     strcat(content, contentTypeField);
+    //     strcat(content, "\r\n");
+
+    //     //memcpy(content)
+
+    //     //send header
+    //     send(sock, content, strlen(content), 0);
+
+    //     sendFile(fileName, sock);
 
     strcpy(content, statusField);
     strcat(content, dateField);
@@ -419,20 +485,20 @@ char* httpHeader (char* fileName, int code, int sock) {
     strcat(content, contentTypeField);
     strcat(content, "\r\n");
 
-    // memcpy(content)
-
     //send header
     send(sock, content, strlen(content), 0);
+
     if (code == 304) {
         //do not resend file if it is in their cache
     } else {
         sendFile(fileName, sock);
-    }
-
+    }   
 
     delete statusField;
     delete dateField;
+    delete lastModifiedField;
     delete contentLengthField;
+    delete contentTypeField;
 
     cout << content << endl;
 
@@ -520,7 +586,6 @@ char* createContentTypeHeader(char* fileName) {
  * Return a header of the last time a file was modified.
  */
 void createLastModHeader(char* lasthdr, char* fileName) {
-
     time_t rawtime;
     struct tm* info;
     char buffer[80];
@@ -547,6 +612,166 @@ void createLastModHeader(char* lasthdr, char* fileName) {
     //printf("%s", lasthdr);
 }
 
+/**
+ * This function determines if a file has been modified since the time
+ * the client asked.
+ */
+bool isFileModifiedSince(char* ifModSinceHdr, char* fileName) {
+    char* temp = new char[100];
+    memcpy(temp, ifModSinceHdr, strlen(ifModSinceHdr)+1);
+
+    // get all values from the changed since string
+    char* token; 
+    char* p;
+    char day[100];
+    printf("given header: %s\n", ifModSinceHdr);
+    token = strtok(temp, " ,:");
+    memcpy(day, token, strlen(token)+1);
+    printf("%s\n", token);
+    token = strtok(NULL, " ,:");
+    printf("%s\n", token);
+    token = strtok(NULL, " ,:");
+    int dayInt = strtol(token, &p, 10);
+    printf("day: %d\n", dayInt);
+    token = strtok(NULL, " ,:");
+    int month;
+    if(strcmp(token, "Jan")==0){
+        month = 1;
+    }else if(strcmp(token, "Feb")==0){
+        month = 2;
+    }else if(strcmp(token, "Mar")==0){
+        month = 3;
+    }else if(strcmp(token, "Apr")==0){
+        month = 4;
+    }else if(strcmp(token, "May")==0){
+        month = 5;
+    }else if(strcmp(token, "Jun")==0){
+        month = 6;
+    }else if(strcmp(token, "Jul")==0){
+        month = 7;
+    }else if(strcmp(token, "Aug")==0){
+        month = 8;
+    }else if(strcmp(token, "Sep")==0){
+        month = 9;
+    }else if(strcmp(token, "Oct")==0){
+        month = 10;
+    }else if(strcmp(token, "Nov")==0){
+        month = 11;
+    }else if(strcmp(token, "Dec")==0){
+        month = 12;
+    }
+    printf("month: %d\n", month);
+    token = strtok(NULL, " ,:");
+    int year = strtol(token, &p, 10);
+    printf("year: %d\n", year);
+    token = strtok(NULL, " ,:");
+    int hour = strtol(token, &p, 10);
+    printf("hour: %d\n", hour);
+    token = strtok(NULL, " ,:");
+    int minute = strtol(token, &p, 10);
+    printf("minute: %d\n", minute);
+    token = strtok(NULL, " ,:");
+    int second = strtol(token, &p, 10);
+    printf("second: %d\n", second);
+
+    // get values from file string
+    char* fileLastHdr = new char[100];
+    createLastModHeader(fileLastHdr, fileName);
+    printf("file header: %s", fileLastHdr);
+    char dayf[100];
+    delete temp;
+    temp = new char[100];
+    memcpy(temp, fileLastHdr, strlen(fileLastHdr)+1);
+    token = strtok(temp, " ,:");
+    printf("%s\n", token);
+    token = strtok(NULL, " ,:");
+    printf("%s\n", token);
+    memcpy(dayf, token, strlen(token)+1);
+    token = strtok(NULL, " ,:");
+    int dayIntf = strtol(token, &p, 10);
+    printf("day: %d\n", dayIntf);
+    int monthf;
+    token = strtok(NULL, " ,:");
+    if(strcmp(token, "Jan")==0){
+        monthf = 1;
+    }else if(strcmp(token, "Feb")==0){
+        monthf = 2;
+    }else if(strcmp(token, "Mar")==0){
+        monthf = 3;
+    }else if(strcmp(token, "Apr")==0){
+        monthf = 4;
+    }else if(strcmp(token, "May")==0){
+        monthf = 5;
+    }else if(strcmp(token, "Jun")==0){
+        monthf = 6;
+    }else if(strcmp(token, "Jul")==0){
+        monthf = 7;
+    }else if(strcmp(token, "Aug")==0){
+        monthf = 8;
+    }else if(strcmp(token, "Sep")==0){
+        monthf = 9;
+    }else if(strcmp(token, "Oct")==0){
+        monthf = 10;
+    }else if(strcmp(token, "Nov")==0){
+        monthf = 11;
+    }else if(strcmp(token, "Dec")==0){
+        monthf = 12;
+    }
+    printf("month: %d\n", monthf);
+    token = strtok(NULL, " ,:");
+    int yearf = strtol(token, &p, 10);
+    printf("year: %d\n", yearf);
+    token = strtok(NULL, " ,:");
+    int hourf = strtol(token, &p, 10);
+    printf("hour: %d\n", hourf);
+    token = strtok(NULL, " ,:");
+    int minutef = strtol(token, &p, 10);
+    printf("minute: %d\n", minutef);
+    token = strtok(NULL, " ,:");
+    int secondf = strtol(token, &p, 10);
+    printf("second: %d\n", secondf);
+
+    // now compare values to find if changed since:
+    if (yearf > year) {
+        return true;
+    } else if (yearf < year){
+        return false;
+    } else if (monthf > month) {
+        return true;
+    } else if (monthf < month){ 
+        return false;
+    } else if (dayIntf > dayInt) {
+        return true;
+    } else if (dayIntf < dayInt) {
+        return false;
+    } else if (hourf > hour) {
+        return true;
+    } else if (hourf < hour) {
+        return false;
+    } else if (minutef > minute) {
+        return true;
+    } else if (minutef < minute) {
+        return false;
+    } else if (secondf > second) {
+        return true;
+    } else if (secondf < second) {
+        return false;
+    }
+    return false;
+}
+
+/**
+ * Return a content type header.
+ * todo wa to find content type without hard coding? 
+ */
+void createContentTypeHeader(char* cthdr, char* mt) {
+    sprintf(cthdr, "Content-Type: %s\r\n", mt);
+    //printf(cthdr);
+}
+
+/**
+ * 
+ */
 bool fileExists(char* fileName) {
     // from https://stackoverflow.com/questions/230062/whats-the-best-way-to-check-if-a-file-exists-in-c-cross-platform
     // line is fileName here
@@ -606,4 +831,3 @@ int sendFile(char* fileName, int sock) {
     }
     // return fData;
 }
-

@@ -199,11 +199,13 @@ int main(int argc, char** argv) {
         if (n <= 0) {
             cout << "TIMEOUT REACHED\n EXITING..." << endl;
             for (int j = 0; j < FD_SETSIZE; j++) {
-                cout << "Socket "<< j <<" cleared..." << endl;	
-		        close(j);
-		        FD_CLR(j, &sockets);
+                if (j != sockfd) {
+                    cout << "Socket "<< j <<" cleared..." << endl;	
+                    close(j);
+                    FD_CLR(j, &sockets);
+                }
 	        }
-            return 0;
+            //return 0;
         }
         // if (tv.tv_sec <= 0) {
         //     cout << "TIMEOUT 2 REACHED\n EXITING (TV)..." << endl;

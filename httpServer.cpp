@@ -150,14 +150,14 @@ int main(int argc, char** argv) {
 
     // test date header
     char* datehdr = new char[80];
-    createDateHeader(datehdr);
+    //createDateHeader(datehdr);
     // printf("%s\n", datehdr);
 
     // Create last modified header (doesn't change? run again before sending if it does)
     //TESTING
     char* lasthdr = new char[80];
     char* temp = (char*)logfile.c_str();
-    createLastModHeader(lasthdr, temp); 
+    //createLastModHeader(lasthdr, temp); 
     //TESTING
     // char tmp2[] = "pdf"; 
     // char* cthdr = new char[80];
@@ -287,59 +287,58 @@ int main(int argc, char** argv) {
                                 
                                 string delimiter = " ";
                                 // for (int j = 0; j < 2; j++) {
-                                    // string token = to.substr(0, to.find(delimiter));
-                                    to.erase(0, to.find(delimiter) + delimiter.length());
-                                    string token = to.substr(0, to.find(delimiter));
-                                    // cout << "address: " << token << "\n";
+                                // string token = to.substr(0, to.find(delimiter));
+                                to.erase(0, to.find(delimiter) + delimiter.length());
+                                string token = to.substr(0, to.find(delimiter));
+                                // cout << "address: " << token << "\n";
 
-                                    char* fullPath = new char[100];
-                                    strcpy(fullPath, directory.c_str());
-                                    strcat(fullPath, token.c_str());
-                                    
+                                char* fullPath = new char[100];
+                                strcpy(fullPath, directory.c_str());  // directory is "." by default
+                                strcat(fullPath, token.c_str()); 
 
-                                    // if (fileExists(((char*)token.c_str())+1)) {
-                                    if (fileExists(fullPath)) {
+                                // if (fileExists(((char*)token.c_str())+1)) {
+                                if (fileExists(fullPath)) {
 
-                                        bool update = true;
-                                        if (have_if_modified) {
-                                            cout << "using for comparison " << if_modified_str << endl;
-                                            update = isFileModifiedSince((char*) if_modified_str.c_str(), fullPath);
-                                        }
+                                    bool update = true;
+                                    if (have_if_modified) {
+                                        cout << "using for comparison " << if_modified_str << endl;
+                                        update = isFileModifiedSince((char*) if_modified_str.c_str(), fullPath);
+                                    }
 
-                                        if (update) {
-                                            // char* response = httpHeader(((char*)token.c_str())+1, 200, i);
-                                            char* response = httpHeader(fullPath, 200, i);
-                                            logInfo(logfile, isLogFile,
-                                                response);
-                                            // logInfo(logfile, isLogFile,
-                                            //     "file sent\n");
-                                        } else {
-                                            char* response = httpHeader(fullPath, 304, i);
-                                            logInfo(logfile, isLogFile,
-                                                "File not modified\n");
-                                        }
+                                    if (update) {  // file has changed
+                                        // char* response = httpHeader(((char*)token.c_str())+1, 200, i);
+                                        char* response = httpHeader(fullPath, 200, i);
+                                        logInfo(logfile, isLogFile,
+                                            response);
+                                        // logInfo(logfile, isLogFile,
+                                        //     "file sent\n");
                                     } else {
-                                        char msg404[] = "404NotFound.html";
-                                        char* response = httpHeader(msg404, 404, i);
+                                        char* response = httpHeader(fullPath, 304, i);
                                         logInfo(logfile, isLogFile,
-                                            response);
-                                        // logInfo(logfile, isLogFile,
-                                        //     "file not found\n");
+                                            "File not modified\n");
                                     }
+                                } else {  // file doesn't exist (just not in current directory?)
+                                    char msg404[] = "404NotFound.html";
+                                    char* response = httpHeader(msg404, 404, i);
+                                    logInfo(logfile, isLogFile,
+                                        response);
+                                    // logInfo(logfile, isLogFile,
+                                    //     "file not found\n");
+                                }
 
-                                    // Don't let the client go outside the base directory!        
-                                    if (strncmp(token.c_str(), "/..", 3) == 0) {
-                                        // cout << "Client tried to escape the base directory\n";
-                                        char msg400[] = "400BadRequest.html";
-                                        char* response = httpHeader(msg400, 400, i);
-                                        logInfo(logfile, isLogFile,
-                                            response);
-                                        // logInfo(logfile, isLogFile,
-                                        //     "Client tried to escape the base directory\n");
-                                        continue;
-                                    }
-                                    
-                                // }
+                                // Don't let the client go outside the base directory!        
+                                if (strncmp(token.c_str(), "/..", 3) == 0) {
+                                    // cout << "Client tried to escape the base directory\n";
+                                    char msg400[] = "400BadRequest.html";
+                                    char* response = httpHeader(msg400, 400, i);
+                                    logInfo(logfile, isLogFile,
+                                        response);
+                                    // logInfo(logfile, isLogFile,
+                                    //     "Client tried to escape the base directory\n");
+                                    continue;
+                                }
+                                
+                            // }
                             }
                             // Not a GET request!!!!
                             else if (lineNumber == 1) {
@@ -370,6 +369,10 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+/**
+ * This function logs events in the log file and also prints the logs to
+ * standard output.
+ */ 
 bool logInfo(string fileName, bool logToFile, string message) {
     if (logToFile) {
         std::ofstream outfile;

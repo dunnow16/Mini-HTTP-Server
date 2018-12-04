@@ -326,20 +326,18 @@ int main(int argc, char** argv) {
                                     // logInfo(logfile, isLogFile,
                                     //     "file not found\n");
                                 }
-                            } 
-                            // Don't let the client go outside the base directory!        
-                            if (strncmp(token.c_str(), "/..", 3) == 0) {
-                                // cout << "Client tried to escape the base directory\n";
-                                char msg400[] = "400BadRequest.html";
-                                char* response = httpHeader(msg400, 400, i);
-                                logInfo(logfile, isLogFile,
-                                    response);
-                                // logInfo(logfile, isLogFile,
-                                //     "Client tried to escape the base directory\n");
-                                continue;
-                            }
-                                
-                            // }
+                            
+                                // Don't let the client go outside the base directory!        
+                                if (strncmp(token.c_str(), "/..", 3) == 0) {
+                                    // cout << "Client tried to escape the base directory\n";
+                                    char msg400[] = "400BadRequest.html";
+                                    char* response = httpHeader(msg400, 400, i);
+                                    logInfo(logfile, isLogFile,
+                                        response);
+                                    // logInfo(logfile, isLogFile,
+                                    //     "Client tried to escape the base directory\n");
+                                    continue;
+                                }
                             }
                             // Not a GET request!!!!
                             else if (lineNumber == 1) {
@@ -355,7 +353,7 @@ int main(int argc, char** argv) {
                                 // send(i, ) HTTP/1.1 404 Not Found
                                 //"HTTP/1.1 501 Not Implemented\r\nConnection: close\r\n\r\n"
                             }
-
+                            
                         }
 
                     }

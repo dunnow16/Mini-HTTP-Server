@@ -243,7 +243,7 @@ int main(int argc, char** argv) {
                     int lineNumber = 0;
                     if (line != NULL) {
                         while(std::getline(ss,to,'\n')) {
-                            cout << to <<endl;
+                            // cout << to <<endl;
 
                             lineNumber++;
 
@@ -258,6 +258,25 @@ int main(int argc, char** argv) {
                             }
                             // GET request, process it.
                             else if (strncmp(to.c_str(), "GET", 3) == 0) {
+
+
+                                std::stringstream ss2(line);
+                                std::string to2;
+                                bool have_if_modified = false;
+                                string if_modified_str;
+                                int lineNumber = 0;
+                                    while(std::getline(ss2,to2,'\n')) {
+                                        cout << to2 <<endl;
+                                        string if_modified_since("If-Modified-Since");
+                                        if (strncmp(to2.c_str(),  if_modified_since.c_str(), if_modified_since.length()) == 0) {
+                                            cout << "found if modified" << endl;
+                                            have_if_modified = true;
+                                            if_modified_str = to2;
+                                            break;
+                                    }
+
+                                }
+
                                 // logInfo(logfile, isLogFile,
                                 //     "GET request\n");
                                 // printf("GET request\n");
@@ -283,14 +302,28 @@ int main(int argc, char** argv) {
                                     strcpy(fullPath, directory.c_str());
                                     strcat(fullPath, token.c_str());
                                     
+
                                     // if (fileExists(((char*)token.c_str())+1)) {
                                     if (fileExists(fullPath)) {
-                                        // char* response = httpHeader(((char*)token.c_str())+1, 200, i);
-                                        char* response = httpHeader(fullPath, 200, i);
-                                        logInfo(logfile, isLogFile,
-                                            response);
-                                        // logInfo(logfile, isLogFile,
-                                        //     "file sent\n");
+
+                                        bool update = true;
+                                        if (have_if_modified) {
+                                            cout << "using for comparison " << if_modified_str << endl;
+                                            update = isFileModifiedSince((char*) if_modified_str.c_str(), fullPath);
+                                        }
+
+                                        if (update) {
+                                            // char* response = httpHeader(((char*)token.c_str())+1, 200, i);
+                                            char* response = httpHeader(fullPath, 200, i);
+                                            logInfo(logfile, isLogFile,
+                                                response);
+                                            // logInfo(logfile, isLogFile,
+                                            //     "file sent\n");
+                                        } else {
+                                            char* response = httpHeader(fullPath, 304, i);
+                                            logInfo(logfile, isLogFile,
+                                                "File not modified\n");
+                                        }
                                     } else {
                                         char msg404[] = "404NotFound.html";
                                         char* response = httpHeader(msg404, 404, i);
@@ -426,19 +459,26 @@ char* httpHeader (char* fileName, int code, int sock) {
     createLastModHeader(lastModifiedField, fileName);
 
 
-    strcpy(content, statusField);
-    strcat(content, dateField);
-    strcat(content, lastModifiedField);
-    strcat(content, contentLengthField);
-    strcat(content, contentTypeField);
-    strcat(content, "\r\n");
+    if (code == 304) {
+        strcpy(content, statusField);
+        strcat(content, "\r\n");
 
-    // memcpy(content)
+    } else {
 
-    //send header
-    send(sock, content, strlen(content), 0);
+        strcpy(content, statusField);
+        strcat(content, dateField);
+        strcat(content, lastModifiedField);
+        strcat(content, contentLengthField);
+        strcat(content, contentTypeField);
+        strcat(content, "\r\n");
 
-    sendFile(fileName, sock);
+        // memcpy(content)
+
+        //send header
+        send(sock, content, strlen(content), 0);
+
+        sendFile(fileName, sock);
+    }
 
 
     delete statusField;

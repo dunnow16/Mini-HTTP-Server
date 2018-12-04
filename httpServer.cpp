@@ -194,8 +194,6 @@ int main(int argc, char** argv) {
         for (i = 0; i < FD_SETSIZE; i++) {
             if(FD_ISSET(i, &tmp_set)) {
                 if (i == sockfd) {  // accepting clients?
-
-                    
                     int len = sizeof(clientaddr);
                     int clientsocket = 
                         accept(sockfd, (struct sockaddr*)&clientaddr, (socklen_t*) &len);
@@ -230,7 +228,6 @@ int main(int argc, char** argv) {
                         continue;
                     }
 
-
                     // printf("got:\n%s\n", line);
 
                     logInfo(logfile, isLogFile,
@@ -263,16 +260,15 @@ int main(int argc, char** argv) {
                                 bool have_if_modified = false;
                                 string if_modified_str;
                                 int lineNumber = 0;
-                                    while(std::getline(ss2,to2,'\n')) {
-                                        cout << to2 <<endl;
-                                        string if_modified_since("If-Modified-Since");
-                                        if (strncmp(to2.c_str(),  if_modified_since.c_str(), if_modified_since.length()) == 0) {
-                                            cout << "found if modified" << endl;
-                                            have_if_modified = true;
-                                            if_modified_str = to2;
-                                            break;
+                                while(std::getline(ss2,to2,'\n')) {
+                                    cout << to2 <<endl;
+                                    string if_modified_since("If-Modified-Since");
+                                    if (strncmp(to2.c_str(),  if_modified_since.c_str(), if_modified_since.length()) == 0) {
+                                        cout << "found if modified" << endl;
+                                        have_if_modified = true;
+                                        if_modified_str = to2;
+                                        break;
                                     }
-
                                 }
 
                                 // logInfo(logfile, isLogFile,
@@ -626,9 +622,15 @@ bool isFileModifiedSince(char* ifModSinceHdr, char* fileName) {
     char day[100];
     printf("given header: %s\n", ifModSinceHdr);
     token = strtok(temp, " ,:");
-    memcpy(day, token, strlen(token)+1);
     printf("%s\n", token);
+    
+    if(strcmp(token, "If-Modified-Since")!=0){
+        cout << "passed bad string to ifFileModifiedSince!" << endl;
+        return true; // just assume true to avoid problems
+    }
+
     token = strtok(NULL, " ,:");
+    memcpy(day, token, strlen(token)+1);
     printf("%s\n", token);
     token = strtok(NULL, " ,:");
     int dayInt = strtol(token, &p, 10);

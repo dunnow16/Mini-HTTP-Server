@@ -197,7 +197,7 @@ int main(int argc, char** argv) {
 
                     // Set timeout for each socket.
                     struct timeval timeout; 
-                    timeout.tv_sec = 20; //TODO 20sec
+                    timeout.tv_sec = 20; 
                     timeout.tv_usec = 0;
 
                     setsockopt(clientsocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
@@ -214,7 +214,6 @@ int main(int argc, char** argv) {
                     if(recv_len == 0) {
                         //if the client has closed the connection 
                         //we need to remove the client from the list of sockets
-
                         logInfo(logfile, isLogFile,
                          "Received zero bytes. Client closed connection.\n");
 
@@ -250,6 +249,7 @@ int main(int argc, char** argv) {
                             }
                             // GET request, process it.
                             else if (strncmp(to.c_str(), "GET", 3) == 0) {
+                                
                                 // logInfo(logfile, isLogFile,
                                 //     "GET request\n");
                                 // printf("GET request\n");
@@ -423,8 +423,11 @@ char* httpHeader (char* fileName, int code, int sock) {
 
     //send header
     send(sock, content, strlen(content), 0);
-
-    sendFile(fileName, sock);
+    if (code == 304) {
+        //do not resend file if it is in their cache
+    } else {
+        sendFile(fileName, sock);
+    }
 
 
     delete statusField;
